@@ -4,8 +4,44 @@ import { Suspense, useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
+const translations = {
+  en: {
+    title: 'Service Call',
+    equipment: 'Equipment',
+    location: 'Location',
+    priority: 'Priority',
+    description: 'Description',
+    photo: 'Photo (optional)',
+    submit: 'Submit Call',
+    submitting: 'Submitting...',
+    successTitle: 'Call Submitted',
+    successMsg: 'A technician has been notified.',
+    critical: 'Critical',
+    high: 'High',
+    medium: 'Medium',
+    low: 'Low',
+  },
+  es: {
+    title: 'Llamada de Servicio',
+    equipment: 'Equipo',
+    location: 'Ubicación',
+    priority: 'Prioridad',
+    description: 'Descripción',
+    photo: 'Foto (opcional)',
+    submit: 'Enviar Llamada',
+    submitting: 'Enviando...',
+    successTitle: 'Llamada Enviada',
+    successMsg: 'Se ha notificado a un técnico.',
+    critical: 'Crítico',
+    high: 'Alto',
+    medium: 'Medio',
+    low: 'Bajo',
+  },
+}
+
 function CallForm() {
   const searchParams = useSearchParams()
+  const [lang, setLang] = useState<'en' | 'es'>('en')
   const [equip, setEquip] = useState('')
   const [loc, setLoc] = useState('')
   const [priority, setPriority] = useState('Medium')
@@ -13,6 +49,8 @@ function CallForm() {
   const [photo, setPhoto] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+
+  const t = translations[lang]
 
   useEffect(() => {
     setEquip(searchParams.get('equip') || '')
@@ -26,7 +64,7 @@ function CallForm() {
     let photoUrl = null
     if (photo) {
       const fileName = `${Date.now()}-${photo.name}`
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('call-photos')
         .upload(fileName, photo)
       if (!error) {
@@ -44,6 +82,7 @@ function CallForm() {
       description,
       photo_url: photoUrl,
       status: 'Open',
+      language: lang,
     })
 
     setLoading(false)
@@ -54,18 +93,28 @@ function CallForm() {
   if (submitted) {
     return (
       <div className="p-6 text-center">
-        <h1 className="text-2xl font-bold text-green-600">Call Submitted</h1>
-        <p className="mt-2">A technician has been notified.</p>
+        <h1 className="text-2xl font-bold text-green-600">{t.successTitle}</h1>
+        <p className="mt-2">{t.successMsg}</p>
       </div>
     )
   }
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Service Call</h1>
+      <div className="flex justify-end mb-2">
+        <button
+          type="button"
+          onClick={() => setLang(lang === 'en' ? 'es' : 'en')}
+          className="text-sm px-3 py-1 border rounded"
+        >
+          {lang === 'en' ? 'Español' : 'English'}
+        </button>
+      </div>
+
+      <h1 className="text-2xl font-bold mb-4">{t.title}</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium">Equipment</label>
+          <label className="block text-sm font-medium">{t.equipment}</label>
           <input
             className="w-full border rounded p-2"
             value={equip}
@@ -74,7 +123,7 @@ function CallForm() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium">Location</label>
+          <label className="block text-sm font-medium">{t.location}</label>
           <input
             className="w-full border rounded p-2"
             value={loc}
@@ -82,20 +131,20 @@ function CallForm() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium">Priority</label>
+          <label className="block text-sm font-medium">{t.priority}</label>
           <select
             className="w-full border rounded p-2"
             value={priority}
             onChange={(e) => setPriority(e.target.value)}
           >
-            <option>Critical</option>
-            <option>High</option>
-            <option>Medium</option>
-            <option>Low</option>
+            <option value="Critical">{t.critical}</option>
+            <option value="High">{t.high}</option>
+            <option value="Medium">{t.medium}</option>
+            <option value="Low">{t.low}</option>
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium">Description</label>
+          <label className="block text-sm font-medium">{t.description}</label>
           <textarea
             className="w-full border rounded p-2"
             value={description}
@@ -104,7 +153,7 @@ function CallForm() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium">Photo (optional)</label>
+          <label className="block text-sm font-medium">{t.photo}</label>
           <input
             type="file"
             accept="image/*"
@@ -116,7 +165,7 @@ function CallForm() {
           disabled={loading}
           className="w-full bg-blue-600 text-white py-2 rounded font-medium"
         >
-          {loading ? 'Submitting...' : 'Submit Call'}
+          {loading ? t.submitting : t.submit}
         </button>
       </form>
     </div>
