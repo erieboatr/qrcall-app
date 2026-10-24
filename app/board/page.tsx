@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
 type Call = {
@@ -12,24 +13,38 @@ type Call = {
   status: string
   submitted_at: string
   photo_url?: string
+  plant_id?: string
 }
 
-export default function BoardPage() {
+function BoardContent() {
+  const searchParams = useSearchParams()
   const [calls, setCalls] = useState<Call[]>([])
+  const [plant, setPlant] = useState('default')
 
   useEffect(() => {
-    fetchCalls()
+    const p = searchParams.get('plant') || 'default'
+    setPlant(p)
+    fetchCalls(p)
+
     const channel = supabase
       .channel('service_calls_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_calls' }, () => fetchCalls())
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'service_calls' },
+        () => fetchCalls(p)
+      )
       .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [])
 
-  async function fetchCalls() {
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [searchParams])
+
+  async function fetchCalls(plantId: string) {
     const { data } = await supabase
       .from('service_calls')
       .select('*')
+      .eq('plant_id', plantId)
       .in('status', ['Open', 'Arrived'])
       .order('submitted_at', { ascending: false })
     if (data) setCalls(data)
@@ -47,7 +62,8 @@ export default function BoardPage() {
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Live Status Board</h1>
+      <h1 className="text-2xl font-bold mb-1">Live Status Board</h1>
+      <p className="text-sm text-gray-600 mb-4">Plant: {plant}</p>
       <div className="space-y-3">
         {calls.map((call) => (
           <div key={call.id} className={`p-4 rounded text-white ${priorityColor(call.priority)}`}>
@@ -57,8 +73,16 @@ export default function BoardPage() {
             {call.photo_url && <img src={call.photo_url} alt="issue" className="mt-2 max-h-40 rounded" />}
           </div>
         ))}
-        {calls.length === 0 && <p className="text-gray-600">No open calls.</p>}
+        {calls.length === 0 && <p className="text-gray-600">No open calls for this plant.</p>}
       </div>
     </div>
+  )
+}
+
+export default function BoardPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-center">Loading...</div>}>
+      <BoardContent />
+    </Suspense>
   )
 }
