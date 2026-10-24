@@ -19,19 +19,11 @@ export default function BoardPage() {
 
   useEffect(() => {
     fetchCalls()
-
     const channel = supabase
       .channel('service_calls_changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'service_calls' },
-        () => fetchCalls()
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_calls' }, () => fetchCalls())
       .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
+    return () => { supabase.removeChannel(channel) }
   }, [])
 
   async function fetchCalls() {
@@ -41,14 +33,6 @@ export default function BoardPage() {
       .in('status', ['Open', 'Arrived'])
       .order('submitted_at', { ascending: false })
     if (data) setCalls(data)
-  }
-
-  async function updateStatus(id: string, newStatus: string) {
-    const updates: any = { status: newStatus }
-    if (newStatus === 'Arrived') updates.arrived_at = new Date().toISOString()
-    if (newStatus === 'Completed') updates.completed_at = new Date().toISOString()
-
-    await supabase.from('service_calls').update(updates).eq('id', id)
   }
 
   function priorityColor(priority: string) {
@@ -66,32 +50,11 @@ export default function BoardPage() {
       <h1 className="text-2xl font-bold mb-4">Live Status Board</h1>
       <div className="space-y-3">
         {calls.map((call) => (
-          <div
-            key={call.id}
-            className={`p-4 rounded text-white ${priorityColor(call.priority)}`}
-          >
+          <div key={call.id} className={`p-4 rounded text-white ${priorityColor(call.priority)}`}>
             <div className="font-bold">{call.equipment_name} — {call.location}</div>
             <div className="text-sm">{call.priority} • {call.status}</div>
             <div className="mt-1">{call.description}</div>
-            {call.photo_url && (
-              <img src={call.photo_url} alt="issue" className="mt-2 max-h-40 rounded" />
-            )}
-            <div className="mt-3 flex gap-2">
-              {call.status === 'Open' && (
-                <button
-                  onClick={() => updateStatus(call.id, 'Arrived')}
-                  className="bg-white text-black px-3 py-1 rounded text-sm font-medium"
-                >
-                  Arrived
-                </button>
-              )}
-              <button
-                onClick={() => updateStatus(call.id, 'Completed')}
-                className="bg-white text-black px-3 py-1 rounded text-sm font-medium"
-              >
-                Completed
-              </button>
-            </div>
+            {call.photo_url && <img src={call.photo_url} alt="issue" className="mt-2 max-h-40 rounded" />}
           </div>
         ))}
         {calls.length === 0 && <p className="text-gray-600">No open calls.</p>}
