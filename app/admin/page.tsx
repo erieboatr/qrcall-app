@@ -3,7 +3,11 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
+const ADMIN_PASSWORD = 'your-secret-password' // change this
+
 export default function AdminPage() {
+  const [authed, setAuthed] = useState(false)
+  const [password, setPassword] = useState('')
   const [techName, setTechName] = useState('')
   const [techPhone, setTechPhone] = useState('')
   const [equipName, setEquipName] = useState('')
@@ -14,6 +18,12 @@ export default function AdminPage() {
   const [start, setStart] = useState('06:00:00')
   const [end, setEnd] = useState('18:00:00')
   const [message, setMessage] = useState('')
+
+  function checkPassword(e: React.FormEvent) {
+    e.preventDefault()
+    if (password === ADMIN_PASSWORD) setAuthed(true)
+    else setMessage('Wrong password')
+  }
 
   async function addTechnician(e: React.FormEvent) {
     e.preventDefault()
@@ -41,6 +51,25 @@ export default function AdminPage() {
       plant_id: plant,
     })
     setMessage(error ? error.message : 'Schedule added')
+  }
+
+  if (!authed) {
+    return (
+      <div className="max-w-sm mx-auto p-8">
+        <h1 className="text-xl font-bold mb-4">Admin Login</h1>
+        <form onSubmit={checkPassword} className="space-y-3">
+          <input
+            type="password"
+            className="w-full border p-2"
+            placeholder="Password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+          />
+          <button className="w-full bg-blue-600 text-white py-2 rounded">Enter</button>
+          {message && <p className="text-red-600 text-sm">{message}</p>}
+        </form>
+      </div>
+    )
   }
 
   return (
