@@ -12,6 +12,7 @@ type Call = {
   description: string
   status: string
   submitted_at: string
+  arrived_at?: string
   photo_url?: string
   plant_id?: string
 }
@@ -28,16 +29,10 @@ function BoardContent() {
 
     const channel = supabase
       .channel('service_calls_changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'service_calls' },
-        () => fetchCalls(p)
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_calls' }, () => fetchCalls(p))
       .subscribe()
 
-    return () => {
-      supabase.removeChannel(channel)
-    }
+    return () => { supabase.removeChannel(channel) }
   }, [searchParams])
 
   async function fetchCalls(plantId: string) {
@@ -60,6 +55,11 @@ function BoardContent() {
     }
   }
 
+  function formatTime(iso?: string) {
+    if (!iso) return ''
+    return new Date(iso).toLocaleString()
+  }
+
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-1">Live Status Board</h1>
@@ -70,6 +70,10 @@ function BoardContent() {
             <div className="font-bold">{call.equipment_name} — {call.location}</div>
             <div className="text-sm">{call.priority} • {call.status}</div>
             <div className="mt-1">{call.description}</div>
+            <div className="text-xs mt-2 opacity-90">
+              Submitted: {formatTime(call.submitted_at)}
+              {call.arrived_at && <> • Arrived: {formatTime(call.arrived_at)}</>}
+            </div>
             {call.photo_url && <img src={call.photo_url} alt="issue" className="mt-2 max-h-40 rounded" />}
           </div>
         ))}
