@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
-const ADMIN_PASSWORD = '33Kiddies1cat!!' // change this
+const ADMIN_PASSWORD = '33Kiddies1cat!!' // change to your password
+
+type Tech = { id: string; name: string; phone: string }
 
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false)
@@ -18,6 +20,16 @@ export default function AdminPage() {
   const [start, setStart] = useState('06:00:00')
   const [end, setEnd] = useState('18:00:00')
   const [message, setMessage] = useState('')
+  const [techs, setTechs] = useState<Tech[]>([])
+
+  useEffect(() => {
+    if (authed) loadTechs()
+  }, [authed])
+
+  async function loadTechs() {
+    const { data } = await supabase.from('technicians').select('id, name, phone').order('name')
+    if (data) setTechs(data)
+  }
 
   function checkPassword(e: React.FormEvent) {
     e.preventDefault()
@@ -31,6 +43,14 @@ export default function AdminPage() {
     setMessage(error ? error.message : 'Technician added')
     setTechName('')
     setTechPhone('')
+    loadTechs()
+  }
+
+  async function deleteTech(id: string) {
+    if (!confirm('Delete this technician?')) return
+    const { error } = await supabase.from('technicians').delete().eq('id', id)
+    setMessage(error ? error.message : 'Technician deleted')
+    loadTechs()
   }
 
   async function addEquipment(e: React.FormEvent) {
@@ -58,13 +78,7 @@ export default function AdminPage() {
       <div className="max-w-sm mx-auto p-8">
         <h1 className="text-xl font-bold mb-4">Admin Login</h1>
         <form onSubmit={checkPassword} className="space-y-3">
-          <input
-            type="password"
-            className="w-full border p-2"
-            placeholder="Password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-          />
+          <input type="password" className="w-full border p-2" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
           <button className="w-full bg-blue-600 text-white py-2 rounded">Enter</button>
           {message && <p className="text-red-600 text-sm">{message}</p>}
         </form>
@@ -76,6 +90,19 @@ export default function AdminPage() {
     <div className="max-w-2xl mx-auto p-4 space-y-8">
       <h1 className="text-2xl font-bold">Admin</h1>
       {message && <p className="text-sm text-green-600">{message}</p>}
+
+      <div className="border p-4 rounded">
+        <h2 className="font-semibold mb-2">Current Technicians</h2>
+        {techs.length === 0 && <p className="text-sm text-gray-500">None yet.</p>}
+        <ul className="space-y-2">
+          {techs.map(t => (
+            <li key={t.id} className="flex justify-between items-center text-sm border-b pb-1">
+              <span>{t.name} — {t.phone}<br /><span className="text-xs text-gray-500">{t.id}</span></span>
+              <button onClick={() => deleteTech(t.id)} className="text-red-600 text-xs">Delete</button>
+            </li>
+          ))}
+        </ul>
+      </div>
 
       <form onSubmit={addTechnician} className="space-y-2 border p-4 rounded">
         <h2 className="font-semibold">Add Technician</h2>
