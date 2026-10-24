@@ -43,6 +43,14 @@ export default function BoardPage() {
     if (data) setCalls(data)
   }
 
+  async function updateStatus(id: string, newStatus: string) {
+    const updates: any = { status: newStatus }
+    if (newStatus === 'Arrived') updates.arrived_at = new Date().toISOString()
+    if (newStatus === 'Completed') updates.completed_at = new Date().toISOString()
+
+    await supabase.from('service_calls').update(updates).eq('id', id)
+  }
+
   function priorityColor(priority: string) {
     switch (priority) {
       case 'Critical': return 'bg-red-500'
@@ -68,9 +76,25 @@ export default function BoardPage() {
             {call.photo_url && (
               <img src={call.photo_url} alt="issue" className="mt-2 max-h-40 rounded" />
             )}
+            <div className="mt-3 flex gap-2">
+              {call.status === 'Open' && (
+                <button
+                  onClick={() => updateStatus(call.id, 'Arrived')}
+                  className="bg-white text-black px-3 py-1 rounded text-sm font-medium"
+                >
+                  Arrived
+                </button>
+              )}
+              <button
+                onClick={() => updateStatus(call.id, 'Completed')}
+                className="bg-white text-black px-3 py-1 rounded text-sm font-medium"
+              >
+                Completed
+              </button>
+            </div>
           </div>
         ))}
-        {calls.length === 0 && <p>No open calls.</p>}
+        {calls.length === 0 && <p className="text-gray-600">No open calls.</p>}
       </div>
     </div>
   )
