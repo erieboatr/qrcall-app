@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
-const ADMIN_PASSWORD = 'your-secret-password' // change this
+const ADMIN_PASSWORD = '33Kiddies1cat!!' // change this
 
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false)
