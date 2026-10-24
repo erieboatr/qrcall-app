@@ -129,6 +129,20 @@ function CallForm() {
       <div className="p-6 text-center">
         <h1 className="text-2xl font-bold text-green-600">{t.successTitle}</h1>
         <p className="mt-2">{t.successMsg}</p>
+        <div className="mt-6 space-y-3">
+          <a
+            href={`/call?plant=${plant}&equip=${encodeURIComponent(equip)}&loc=${encodeURIComponent(loc)}`}
+            className="block w-full bg-blue-600 text-white py-2 rounded font-medium"
+          >
+            Back to this machine
+          </a>
+          <a
+            href={`/board?plant=${plant}`}
+            className="block w-full bg-gray-600 text-white py-2 rounded font-medium"
+          >
+            View Status Board
+          </a>
+        </div>
       </div>
     )
   }
