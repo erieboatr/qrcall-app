@@ -48,6 +48,7 @@ const translations = {
 function CallForm() {
   const searchParams = useSearchParams()
   const [lang, setLang] = useState<'en' | 'es'>('en')
+  const [plant, setPlant] = useState('default')
   const [equip, setEquip] = useState('')
   const [loc, setLoc] = useState('')
   const [priority, setPriority] = useState('Medium')
@@ -60,22 +61,25 @@ function CallForm() {
   const t = translations[lang]
 
   useEffect(() => {
+    const p = searchParams.get('plant') || 'default'
     const eq = searchParams.get('equip') || ''
     const lc = searchParams.get('loc') || ''
+    setPlant(p)
     setEquip(eq)
     setLoc(lc)
-    if (eq) checkExistingCall(eq)
+    if (eq) checkExistingCall(eq, p)
   }, [searchParams])
 
-  async function checkExistingCall(equipmentName: string) {
+  async function checkExistingCall(equipmentName: string, plantId: string) {
     const { data } = await supabase
       .from('service_calls')
       .select('*')
       .eq('equipment_name', equipmentName)
+      .eq('plant_id', plantId)
       .in('status', ['Open', 'Arrived'])
       .order('submitted_at', { ascending: false })
       .limit(1)
-      .single()
+      .maybeSingle()
     if (data) setExistingCall(data)
   }
 
@@ -101,6 +105,7 @@ function CallForm() {
       photo_url: photoUrl,
       status: 'Open',
       language: lang,
+      plant_id: plant,
     })
 
     setLoading(false)
