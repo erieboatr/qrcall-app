@@ -121,7 +121,19 @@ export default function AdminPage() {
 
       <form onSubmit={addSchedule} className="space-y-2 border p-4 rounded">
         <h2 className="font-semibold">Add Schedule</h2>
-        <input className="w-full border p-2" placeholder="Technician UUID" value={techId} onChange={e => setTechId(e.target.value)} required />
+        <select
+          className="w-full border p-2"
+          value={techId}
+          onChange={e => setTechId(e.target.value)}
+          required
+        >
+          <option value="">Select technician</option>
+          {techs.map(t => (
+            <option key={t.id} value={t.id}>
+              {t.name} ({t.id.slice(0, 8)}…)
+            </option>
+          ))}
+        </select>
         <input className="w-full border p-2" type="number" placeholder="Day (0-6)" value={day} onChange={e => setDay(Number(e.target.value))} />
         <input className="w-full border p-2" placeholder="Start (HH:MM:SS)" value={start} onChange={e => setStart(e.target.value)} />
         <input className="w-full border p-2" placeholder="End (HH:MM:SS)" value={end} onChange={e => setEnd(e.target.value)} />
