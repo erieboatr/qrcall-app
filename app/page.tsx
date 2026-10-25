@@ -20,11 +20,10 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      {/* Hero */}
       <section className="max-w-5xl mx-auto px-4 pt-12 pb-8 text-center">
-        {/* Logo placeholder – replace with <img src="/logo.png" ... /> later */}
+        {/* Logo */}
         <div className="mb-6 flex justify-center">
-          <div className="text-3xl font-bold text-blue-600">Qrcall</div>
+          <img src="/logo.png" alt="Qrcall" className="h-16 mx-auto" />
         </div>
 
         <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">
@@ -34,7 +33,7 @@ export default function Home() {
           QR-code service requests and a live status board for HVAC, plumbing, appliance repair, facilities, and industrial teams.
         </p>
 
-        {/* Fixed-height demo board so buttons don’t jump */}
+        {/* Fixed-height demo board */}
         <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-4 text-left mb-8 h-64 overflow-hidden">
           <div className="text-sm font-semibold text-slate-500 mb-3">Live Status Board</div>
           <div className="space-y-2">
@@ -72,7 +71,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Markets */}
       <section className="max-w-5xl mx-auto px-4 py-10">
         <h2 className="text-2xl font-semibold text-center mb-6">Works for any service team</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-sm">
