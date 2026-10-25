@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
-const ADMIN_PASSWORD = 'MyPlant2026' // change to your password
+const ADMIN_PASSWORD = '33Kiddies1cat!!' // change to your password
 
 type Tech = { id: string; name: string; phone: string }
 
