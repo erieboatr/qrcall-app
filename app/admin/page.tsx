@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
-const ADMIN_PASSWORD = '33Kiddies1cat!!' // change to your password
+const ADMIN_PASSWORD = 'MyPlant2026' // change to your password
 
 type Tech = { id: string; name: string; phone: string }
 
@@ -21,6 +21,14 @@ export default function AdminPage() {
   const [end, setEnd] = useState('18:00:00')
   const [message, setMessage] = useState('')
   const [techs, setTechs] = useState<Tech[]>([])
+
+  // Plant form
+  const [plantId, setPlantId] = useState('')
+  const [plantName, setPlantName] = useState('')
+  const [plantCity, setPlantCity] = useState('')
+  const [plantState, setPlantState] = useState('')
+  const [plantPoc, setPlantPoc] = useState('')
+  const [plantPhone, setPlantPhone] = useState('')
 
   useEffect(() => {
     if (authed) loadTechs()
@@ -73,6 +81,25 @@ export default function AdminPage() {
     setMessage(error ? error.message : 'Schedule added')
   }
 
+  async function addPlant(e: React.FormEvent) {
+    e.preventDefault()
+    const { error } = await supabase.from('plants').insert({
+      id: plantId,
+      name: plantName,
+      city: plantCity,
+      state: plantState,
+      poc: plantPoc,
+      phone: plantPhone,
+    })
+    setMessage(error ? error.message : 'Plant added')
+    setPlantId('')
+    setPlantName('')
+    setPlantCity('')
+    setPlantState('')
+    setPlantPoc('')
+    setPlantPhone('')
+  }
+
   if (!authed) {
     return (
       <div className="max-w-sm mx-auto p-8">
@@ -90,6 +117,17 @@ export default function AdminPage() {
     <div className="max-w-2xl mx-auto p-4 space-y-8">
       <h1 className="text-2xl font-bold">Admin</h1>
       {message && <p className="text-sm text-green-600">{message}</p>}
+
+      <form onSubmit={addPlant} className="space-y-2 border p-4 rounded">
+        <h2 className="font-semibold">Add Plant</h2>
+        <input className="w-full border p-2" placeholder="Plant ID (e.g. ppi)" value={plantId} onChange={e => setPlantId(e.target.value)} required />
+        <input className="w-full border p-2" placeholder="Plant Name" value={plantName} onChange={e => setPlantName(e.target.value)} required />
+        <input className="w-full border p-2" placeholder="City" value={plantCity} onChange={e => setPlantCity(e.target.value)} />
+        <input className="w-full border p-2" placeholder="State" value={plantState} onChange={e => setPlantState(e.target.value)} />
+        <input className="w-full border p-2" placeholder="Point of Contact" value={plantPoc} onChange={e => setPlantPoc(e.target.value)} />
+        <input className="w-full border p-2" placeholder="Phone" value={plantPhone} onChange={e => setPlantPhone(e.target.value)} />
+        <button className="bg-blue-600 text-white px-4 py-2 rounded">Add Plant</button>
+      </form>
 
       <div className="border p-4 rounded">
         <h2 className="font-semibold mb-2">Current Technicians</h2>
@@ -121,17 +159,10 @@ export default function AdminPage() {
 
       <form onSubmit={addSchedule} className="space-y-2 border p-4 rounded">
         <h2 className="font-semibold">Add Schedule</h2>
-        <select
-          className="w-full border p-2"
-          value={techId}
-          onChange={e => setTechId(e.target.value)}
-          required
-        >
+        <select className="w-full border p-2" value={techId} onChange={e => setTechId(e.target.value)} required>
           <option value="">Select technician</option>
           {techs.map(t => (
-            <option key={t.id} value={t.id}>
-              {t.name} ({t.id.slice(0, 8)}…)
-            </option>
+            <option key={t.id} value={t.id}>{t.name} ({t.id.slice(0, 8)}…)</option>
           ))}
         </select>
         <input className="w-full border p-2" type="number" placeholder="Day (0-6)" value={day} onChange={e => setDay(Number(e.target.value))} />
