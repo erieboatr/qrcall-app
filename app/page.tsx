@@ -63,7 +63,7 @@ export default function Home() {
             View Demo Board
           </a>
           <a
-            href="mailto:sales@qrcall.com"
+            href="/contact"
             className="bg-slate-800 text-white px-8 py-3 rounded-lg font-medium hover:bg-slate-900"
           >
             Contact Sales
