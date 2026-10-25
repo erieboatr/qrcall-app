@@ -12,12 +12,14 @@ const translations = {
     priority: 'Priority',
     description: 'Description',
     photo: 'Photo (optional)',
+    submitter: 'Your Name',
     submit: 'Submit Call',
     submitting: 'Submitting...',
     successTitle: 'Call Submitted',
     successMsg: 'A technician has been notified.',
     arrived: 'Arrived',
     completed: 'Completed',
+    needsMore: 'Needs More Work',
     currentCall: 'Current Call',
     critical: 'Critical',
     high: 'High',
@@ -31,12 +33,14 @@ const translations = {
     priority: 'Prioridad',
     description: 'Descripción',
     photo: 'Foto (opcional)',
+    submitter: 'Su Nombre',
     submit: 'Enviar Llamada',
     submitting: 'Enviando...',
     successTitle: 'Llamada Enviada',
     successMsg: 'Se ha notificado a un técnico.',
     arrived: 'Llegué',
     completed: 'Completado',
+    needsMore: 'Necesita Más Trabajo',
     currentCall: 'Llamada Actual',
     critical: 'Crítico',
     high: 'Alto',
@@ -53,6 +57,7 @@ function CallForm() {
   const [loc, setLoc] = useState('')
   const [priority, setPriority] = useState('Medium')
   const [description, setDescription] = useState('')
+  const [submitter, setSubmitter] = useState('')
   const [photo, setPhoto] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -76,7 +81,7 @@ function CallForm() {
       .select('*')
       .eq('equipment_name', equipmentName)
       .eq('plant_id', plantId)
-      .in('status', ['Open', 'Arrived'])
+      .in('status', ['Open', 'Waiting', 'Arrived', 'Needs More Work'])
       .order('submitted_at', { ascending: false })
       .limit(1)
       .maybeSingle()
@@ -103,9 +108,10 @@ function CallForm() {
       priority,
       description,
       photo_url: photoUrl,
-      status: 'Open',
+      status: 'Waiting',
       language: lang,
       plant_id: plant,
+      submitter_name: submitter,
     })
 
     setLoading(false)
@@ -130,16 +136,10 @@ function CallForm() {
         <h1 className="text-2xl font-bold text-green-600">{t.successTitle}</h1>
         <p className="mt-2">{t.successMsg}</p>
         <div className="mt-6 space-y-3">
-          <a
-            href={`/call?plant=${plant}&equip=${encodeURIComponent(equip)}&loc=${encodeURIComponent(loc)}`}
-            className="block w-full bg-blue-600 text-white py-2 rounded font-medium"
-          >
+          <a href={`/call?plant=${plant}&equip=${encodeURIComponent(equip)}&loc=${encodeURIComponent(loc)}`} className="block w-full bg-blue-600 text-white py-2 rounded font-medium">
             Back to this machine
           </a>
-          <a
-            href={`/board?plant=${plant}`}
-            className="block w-full bg-gray-600 text-white py-2 rounded font-medium"
-          >
+          <a href={`/board?plant=${plant}`} className="block w-full bg-gray-600 text-white py-2 rounded font-medium">
             View Status Board
           </a>
         </div>
@@ -151,11 +151,7 @@ function CallForm() {
     return (
       <div className="max-w-md mx-auto p-4">
         <div className="flex justify-end mb-2">
-          <button
-            type="button"
-            onClick={() => setLang(lang === 'en' ? 'es' : 'en')}
-            className="text-sm px-3 py-1 border rounded"
-          >
+          <button type="button" onClick={() => setLang(lang === 'en' ? 'es' : 'en')} className="text-sm px-3 py-1 border rounded">
             {lang === 'en' ? 'Español' : 'English'}
           </button>
         </div>
@@ -164,24 +160,14 @@ function CallForm() {
           <div><strong>{existingCall.equipment_name}</strong> — {existingCall.location}</div>
           <div>{existingCall.priority} • {existingCall.status}</div>
           <div>{existingCall.description}</div>
-          {existingCall.photo_url && (
-            <img src={existingCall.photo_url} alt="issue" className="mt-2 max-h-40 rounded" />
-          )}
-          <div className="flex gap-2 pt-2">
-            {existingCall.status === 'Open' && (
-              <button
-                onClick={() => updateStatus('Arrived')}
-                className="bg-blue-600 text-white px-4 py-2 rounded"
-              >
-                {t.arrived}
-              </button>
+          {existingCall.submitter_name && <div className="text-sm">Submitted by: {existingCall.submitter_name}</div>}
+          {existingCall.photo_url && <img src={existingCall.photo_url} alt="issue" className="mt-2 max-h-40 rounded" />}
+          <div className="flex flex-wrap gap-2 pt-2">
+            {existingCall.status !== 'Arrived' && existingCall.status !== 'Completed' && (
+              <button onClick={() => updateStatus('Arrived')} className="bg-blue-600 text-white px-4 py-2 rounded">{t.arrived}</button>
             )}
-            <button
-              onClick={() => updateStatus('Completed')}
-              className="bg-green-600 text-white px-4 py-2 rounded"
-            >
-              {t.completed}
-            </button>
+            <button onClick={() => updateStatus('Needs More Work')} className="bg-orange-600 text-white px-4 py-2 rounded">{t.needsMore}</button>
+            <button onClick={() => updateStatus('Completed')} className="bg-green-600 text-white px-4 py-2 rounded">{t.completed}</button>
           </div>
         </div>
       </div>
@@ -191,16 +177,16 @@ function CallForm() {
   return (
     <div className="max-w-md mx-auto p-4">
       <div className="flex justify-end mb-2">
-        <button
-          type="button"
-          onClick={() => setLang(lang === 'en' ? 'es' : 'en')}
-          className="text-sm px-3 py-1 border rounded"
-        >
+        <button type="button" onClick={() => setLang(lang === 'en' ? 'es' : 'en')} className="text-sm px-3 py-1 border rounded">
           {lang === 'en' ? 'Español' : 'English'}
         </button>
       </div>
       <h1 className="text-2xl font-bold mb-4">{t.title}</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium">{t.submitter}</label>
+          <input className="w-full border rounded p-2" value={submitter} onChange={(e) => setSubmitter(e.target.value)} required />
+        </div>
         <div>
           <label className="block text-sm font-medium">{t.equipment}</label>
           <input className="w-full border rounded p-2" value={equip} onChange={(e) => setEquip(e.target.value)} required />
