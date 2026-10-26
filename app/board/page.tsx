@@ -22,6 +22,7 @@ function BoardContent() {
   const searchParams = useSearchParams()
   const [calls, setCalls] = useState<Call[]>([])
   const [plant, setPlant] = useState('default')
+  const [logoUrl, setLogoUrl] = useState<string | null>(null)
   const [onDuty, setOnDuty] = useState<string[]>([])
 
   useEffect(() => {
@@ -29,6 +30,7 @@ function BoardContent() {
     setPlant(p)
     fetchCalls(p)
     fetchOnDuty(p)
+    loadPlantLogo(p)
 
     const channel = supabase
       .channel('service_calls_changes')
@@ -40,6 +42,15 @@ function BoardContent() {
 
     return () => { supabase.removeChannel(channel) }
   }, [searchParams])
+
+  async function loadPlantLogo(plantId: string) {
+    const { data } = await supabase
+      .from('plants')
+      .select('logo_url')
+      .eq('id', plantId)
+      .maybeSingle()
+    if (data?.logo_url) setLogoUrl(data.logo_url)
+  }
 
   async function fetchCalls(plantId: string) {
     const { data } = await supabase
@@ -87,6 +98,7 @@ function BoardContent() {
 
   return (
     <div className="p-4">
+      {logoUrl && <img src={logoUrl} alt="logo" className="h-12 mb-4" />}
       <h1 className="text-2xl font-bold mb-1">Live Status Board</h1>
       <p className="text-sm text-gray-600 mb-1">Plant: {plant}</p>
       <p className="text-sm mb-4">
