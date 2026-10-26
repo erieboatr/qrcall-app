@@ -53,6 +53,7 @@ function CallForm() {
   const searchParams = useSearchParams()
   const [lang, setLang] = useState<'en' | 'es'>('en')
   const [plant, setPlant] = useState('default')
+  const [logoUrl, setLogoUrl] = useState<string | null>(null)
   const [equip, setEquip] = useState('')
   const [loc, setLoc] = useState('')
   const [priority, setPriority] = useState('Medium')
@@ -72,8 +73,18 @@ function CallForm() {
     setPlant(p)
     setEquip(eq)
     setLoc(lc)
+    loadPlantLogo(p)
     if (eq) checkExistingCall(eq, p)
   }, [searchParams])
+
+  async function loadPlantLogo(plantId: string) {
+    const { data } = await supabase
+      .from('plants')
+      .select('logo_url')
+      .eq('id', plantId)
+      .maybeSingle()
+    if (data?.logo_url) setLogoUrl(data.logo_url)
+  }
 
   async function checkExistingCall(equipmentName: string, plantId: string) {
     const { data } = await supabase
@@ -133,6 +144,7 @@ function CallForm() {
   if (submitted) {
     return (
       <div className="p-6 text-center">
+        {logoUrl && <img src={logoUrl} alt="logo" className="h-12 mx-auto mb-4" />}
         <h1 className="text-2xl font-bold text-green-600">{t.successTitle}</h1>
         <p className="mt-2">{t.successMsg}</p>
         <div className="mt-6 space-y-3">
@@ -150,6 +162,7 @@ function CallForm() {
   if (existingCall) {
     return (
       <div className="max-w-md mx-auto p-4">
+        {logoUrl && <img src={logoUrl} alt="logo" className="h-12 mx-auto mb-4" />}
         <div className="flex justify-end mb-2">
           <button type="button" onClick={() => setLang(lang === 'en' ? 'es' : 'en')} className="text-sm px-3 py-1 border rounded">
             {lang === 'en' ? 'Español' : 'English'}
@@ -176,6 +189,7 @@ function CallForm() {
 
   return (
     <div className="max-w-md mx-auto p-4">
+      {logoUrl && <img src={logoUrl} alt="logo" className="h-12 mx-auto mb-4" />}
       <div className="flex justify-end mb-2">
         <button type="button" onClick={() => setLang(lang === 'en' ? 'es' : 'en')} className="text-sm px-3 py-1 border rounded">
           {lang === 'en' ? 'Español' : 'English'}
