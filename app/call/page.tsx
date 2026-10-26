@@ -60,6 +60,7 @@ function CallForm() {
   const [description, setDescription] = useState('')
   const [submitter, setSubmitter] = useState('')
   const [photo, setPhoto] = useState<File | null>(null)
+  const [honeypot, setHoneypot] = useState('')
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [existingCall, setExistingCall] = useState<any>(null)
@@ -99,8 +100,27 @@ function CallForm() {
     if (data) setExistingCall(data)
   }
 
+  function isRateLimited() {
+    const key = 'qrcall_last_submit'
+    const last = localStorage.getItem(key)
+    const now = Date.now()
+    if (last && now - parseInt(last) < 60_000) return true // 1 per minute
+    localStorage.setItem(key, now.toString())
+    return false
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+
+    // Honeypot – bots fill this
+    if (honeypot) return
+
+    // Simple rate limit
+    if (isRateLimited()) {
+      alert('Please wait a minute before submitting another call.')
+      return
+    }
+
     setLoading(true)
 
     let photoUrl = null
@@ -197,6 +217,16 @@ function CallForm() {
       </div>
       <h1 className="text-2xl font-bold mb-4">{t.title}</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Honeypot – hidden from users */}
+        <input
+          type="text"
+          name="website"
+          value={honeypot}
+          onChange={e => setHoneypot(e.target.value)}
+          style={{ display: 'none' }}
+          tabIndex={-1}
+          autoComplete="off"
+        />
         <div>
           <label className="block text-sm font-medium">{t.submitter}</label>
           <input className="w-full border rounded p-2" value={submitter} onChange={(e) => setSubmitter(e.target.value)} required />
