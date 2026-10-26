@@ -144,7 +144,7 @@ function CallForm() {
   if (submitted) {
     return (
       <div className="p-6 text-center">
-        {logoUrl && <img src={logoUrl} alt="logo" className="h-12 mx-auto mb-4" />}
+        <img src={logoUrl || '/logo.png'} alt="logo" className="h-12 mx-auto mb-4" />
         <h1 className="text-2xl font-bold text-green-600">{t.successTitle}</h1>
         <p className="mt-2">{t.successMsg}</p>
         <div className="mt-6 space-y-3">
@@ -162,7 +162,7 @@ function CallForm() {
   if (existingCall) {
     return (
       <div className="max-w-md mx-auto p-4">
-        {logoUrl && <img src={logoUrl} alt="logo" className="h-12 mx-auto mb-4" />}
+        <img src={logoUrl || '/logo.png'} alt="logo" className="h-12 mx-auto mb-4" />
         <div className="flex justify-end mb-2">
           <button type="button" onClick={() => setLang(lang === 'en' ? 'es' : 'en')} className="text-sm px-3 py-1 border rounded">
             {lang === 'en' ? 'Español' : 'English'}
@@ -189,7 +189,7 @@ function CallForm() {
 
   return (
     <div className="max-w-md mx-auto p-4">
-      {logoUrl && <img src={logoUrl} alt="logo" className="h-12 mx-auto mb-4" />}
+      <img src={logoUrl || '/logo.png'} alt="logo" className="h-12 mx-auto mb-4" />
       <div className="flex justify-end mb-2">
         <button type="button" onClick={() => setLang(lang === 'en' ? 'es' : 'en')} className="text-sm px-3 py-1 border rounded">
           {lang === 'en' ? 'Español' : 'English'}

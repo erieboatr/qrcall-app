@@ -98,7 +98,7 @@ function BoardContent() {
 
   return (
     <div className="p-4">
-      {logoUrl && <img src={logoUrl} alt="logo" className="h-12 mb-4" />}
+      <img src={logoUrl || '/logo.png'} alt="logo" className="h-12 mb-4" />
       <h1 className="text-2xl font-bold mb-1">Live Status Board</h1>
       <p className="text-sm text-gray-600 mb-1">Plant: {plant}</p>
       <p className="text-sm mb-4">

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
-const ADMIN_PASSWORD = '33Kiddies1cat!!' // change to your password
+const ADMIN_PASSWORD = 'MyPlant2026' // change to your password
 
 type Tech = { id: string; name: string; phone: string }
 
@@ -22,7 +22,6 @@ export default function AdminPage() {
   const [message, setMessage] = useState('')
   const [techs, setTechs] = useState<Tech[]>([])
 
-  // Plant form
   const [plantId, setPlantId] = useState('')
   const [plantName, setPlantName] = useState('')
   const [plantCity, setPlantCity] = useState('')
@@ -103,6 +102,7 @@ export default function AdminPage() {
   if (!authed) {
     return (
       <div className="max-w-sm mx-auto p-8">
+        <img src="/logo.png" alt="Qrcall" className="h-12 mx-auto mb-4" />
         <h1 className="text-xl font-bold mb-4">Admin Login</h1>
         <form onSubmit={checkPassword} className="space-y-3">
           <input type="password" className="w-full border p-2" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
@@ -115,6 +115,7 @@ export default function AdminPage() {
 
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-8">
+      <img src="/logo.png" alt="Qrcall" className="h-12 mb-2" />
       <h1 className="text-2xl font-bold">Admin</h1>
       {message && <p className="text-sm text-green-600">{message}</p>}
 
