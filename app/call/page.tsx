@@ -116,7 +116,7 @@ function CallForm() {
 
     setLoading(false)
     if (!error) setSubmitted(true)
-    else alert('Error submitting call')
+    else alert('Error: ' + error.message')
   }
 
   async function updateStatus(newStatus: string) {
