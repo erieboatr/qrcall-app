@@ -1,88 +1,111 @@
-'use client'
+"use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from "react"
+import { createClient } from "@supabase/supabase-js"
+import { useSearchParams } from "next/navigation"
 
-const demoCalls = [
-  { equip: 'Demo Boiler #1', loc: 'Mechanical Room', priority: 'Critical', status: 'Open', color: 'bg-red-500' },
-  { equip: 'Demo Walk-in Cooler', loc: 'Kitchen', priority: 'High', status: 'Arrived', color: 'bg-orange-500' },
-  { equip: 'Demo Rooftop Unit', loc: 'North Wing', priority: 'Medium', status: 'Open', color: 'bg-yellow-400' },
-]
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
-export default function Home() {
-  const [visible, setVisible] = useState(0)
+export default function Board() {
+  const searchParams = useSearchParams()
+  const plant = searchParams.get("plant") || ""
+  const [calls, setCalls] = useState<any[]>([])
+  const [onDuty, setOnDuty] = useState<string>("Loading…")
+  const [logo, setLogo] = useState("/logo.png")
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setVisible((v) => (v + 1) % (demoCalls.length + 1))
-    }, 2000)
-    return () => clearInterval(timer)
-  }, [])
+    // Load plant logo
+    if (plant) {
+      supabase
+        .from("plants")
+        .select("logo_url")
+        .eq("id", plant)
+        .single()
+        .then(({ data }) => {
+          if (data?.logo_url) setLogo(data.logo_url)
+        })
+    }
+
+    // Initial load + realtime
+    const load = async () => {
+      let query = supabase
+        .from("service_calls")
+        .select("*")
+        .neq("status", "Completed")
+        .order("created_at", { ascending: false })
+
+      if (plant) query = query.eq("plant_id", plant)
+
+      const { data } = await query
+      setCalls(data || [])
+    }
+
+    load()
+
+    const channel = supabase
+      .channel("board")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "service_calls" },
+        () => load()
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [plant])
+
+  const priorityColor = (p: string) => {
+    if (p === "Critical") return "bg-red-600"
+    if (p === "High") return "bg-orange-500"
+    if (p === "Medium") return "bg-yellow-500"
+    return "bg-blue-500"
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      <section className="max-w-5xl mx-auto px-4 pt-12 pb-8 text-center">
-        {/* Logo */}
-        <div className="mb-6 flex justify-center">
-          <img src="/logo.png" alt="Qrcall" className="h-16 mx-auto" />
+    <div className="min-h-screen bg-gray-900 text-white p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <img src={logo} alt="Plant logo" className="h-16 object-contain" />
+        <div className="text-right">
+          <h1 className="text-4xl font-bold">Live Status Board</h1>
+          <p className="text-xl text-gray-300">Plant: {plant || "All"}</p>
+          <p className="text-lg text-gray-400">On duty: {onDuty}</p>
         </div>
+      </div>
 
-        <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">
-          Service Calls Made Simple
-        </h1>
-        <p className="text-lg text-slate-600 mb-6 max-w-2xl mx-auto">
-          QR-code service requests and a live status board for HVAC, plumbing, appliance repair, facilities, and industrial teams.
-        </p>
-
-        {/* Fixed-height demo board */}
-        <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-4 text-left mb-8 h-64 overflow-hidden">
-          <div className="text-sm font-semibold text-slate-500 mb-3">Live Status Board</div>
-          <div className="space-y-2">
-            {demoCalls.slice(0, visible).map((call, i) => (
-              <div key={i} className={`${call.color} text-white p-3 rounded-lg text-sm`}>
-                <div className="font-medium">{call.equip} — {call.loc}</div>
-                <div className="text-xs opacity-90">{call.priority} • {call.status}</div>
-              </div>
-            ))}
-            {visible === 0 && (
-              <div className="text-slate-400 text-sm py-8 text-center">Waiting for calls…</div>
-            )}
+      {/* Calls */}
+      <div className="space-y-4">
+        {calls.length === 0 && (
+          <div className="text-center text-3xl text-gray-400 py-20">
+            No open service calls
           </div>
-        </div>
+        )}
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <a
-            href="/call?plant=qrcall"
-            className="bg-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-700"
+        {calls.map((call) => (
+          <div
+            key={call.id}
+            className="flex items-center gap-6 bg-gray-800 rounded-xl p-5 shadow-lg"
           >
-            Try a Demo Call
-          </a>
-          <a
-            href="/board?plant=qrcall"
-            className="bg-white text-blue-600 border border-blue-600 px-8 py-3 rounded-lg font-medium hover:bg-blue-50"
-          >
-            View Demo Board
-          </a>
-          <a
-            href="/contact"
-            className="bg-slate-800 text-white px-8 py-3 rounded-lg font-medium hover:bg-slate-900"
-          >
-            Contact Sales
-          </a>
-        </div>
-      </section>
-
-      <section className="max-w-5xl mx-auto px-4 py-10">
-        <h2 className="text-2xl font-semibold text-center mb-6">Works for any service team</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-sm">
-          {['HVAC', 'Plumbing', 'Appliance Repair', 'Industrial', 'Facilities', 'Property Mgmt', 'Restaurants', 'Hotels'].map((m) => (
-            <div key={m} className="bg-white rounded-lg py-3 shadow-sm">{m}</div>
-          ))}
-        </div>
-      </section>
-
-      <footer className="text-center py-8 text-sm text-slate-500">
-        Faster response. Less downtime. Clear visibility.
-      </footer>
+            <div className={`w-4 h-24 rounded ${priorityColor(call.priority)}`} />
+            <div className="flex-1">
+              <div className="text-3xl font-bold">{call.equipment_name}</div>
+              <div className="text-xl text-gray-300">{call.location}</div>
+              <div className="text-lg mt-1">
+                {call.priority} • {call.status}
+              </div>
+            </div>
+            <div className="text-right text-lg text-gray-400">
+              <div>{call.submitter_name}</div>
+              <div>{new Date(call.created_at).toLocaleString()}</div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
