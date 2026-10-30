@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { createClient } from "@supabase/supabase-js"
 import { useSearchParams } from "next/navigation"
 
@@ -9,7 +9,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-export default function Board() {
+function BoardContent() {
   const searchParams = useSearchParams()
   const plant = searchParams.get("plant") || ""
   const [calls, setCalls] = useState<any[]>([])
@@ -17,7 +17,6 @@ export default function Board() {
   const [logo, setLogo] = useState("/logo.png")
 
   useEffect(() => {
-    // Load plant logo
     if (plant) {
       supabase
         .from("plants")
@@ -29,7 +28,6 @@ export default function Board() {
         })
     }
 
-    // Initial load + realtime
     const load = async () => {
       let query = supabase
         .from("service_calls")
@@ -68,7 +66,6 @@ export default function Board() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
-      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <img src={logo} alt="Plant logo" className="h-16 object-contain" />
         <div className="text-right">
@@ -78,7 +75,6 @@ export default function Board() {
         </div>
       </div>
 
-      {/* Calls */}
       <div className="space-y-4">
         {calls.length === 0 && (
           <div className="text-center text-3xl text-gray-400 py-20">
@@ -107,5 +103,13 @@ export default function Board() {
         ))}
       </div>
     </div>
+  )
+}
+
+export default function Board() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-900 text-white p-6 text-2xl">Loading board…</div>}>
+      <BoardContent />
+    </Suspense>
   )
 }
