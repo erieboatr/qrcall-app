@@ -1,8 +1,13 @@
-'use client'
+"use client"
 
-import { Suspense, useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { Suspense, useEffect, useState } from "react"
+import { createClient } from "@supabase/supabase-js"
+import { useSearchParams } from "next/navigation"
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 type Call = {
   id: string
@@ -20,105 +25,135 @@ type Call = {
 
 function BoardContent() {
   const searchParams = useSearchParams()
+  const plant = searchParams.get("plant") || ""
   const [calls, setCalls] = useState<Call[]>([])
-  const [plant, setPlant] = useState('default')
-  const [logoUrl, setLogoUrl] = useState<string | null>(null)
   const [onDuty, setOnDuty] = useState<string[]>([])
+  const [logoUrl, setLogoUrl] = useState("/logo.png")
 
   useEffect(() => {
-    const p = searchParams.get('plant') || 'default'
-    setPlant(p)
-    fetchCalls(p)
-    fetchOnDuty(p)
-    loadPlantLogo(p)
+    const p = plant || "default"
+
+    async function loadLogo() {
+      const { data } = await supabase
+        .from("plants")
+        .select("logo_url")
+        .eq("id", p)
+        .maybeSingle()
+      if (data?.logo_url) setLogoUrl(data.logo_url)
+    }
+
+    async function loadCalls() {
+      let query = supabase
+        .from("service_calls")
+        .select("*")
+        .in("status", ["Waiting", "Arrived", "Needs More Work"])
+        .order("submitted_at", { ascending: false })
+
+      if (plant) query = query.eq("plant_id", plant)
+
+      const { data } = await query
+      setCalls(data || [])
+    }
+
+    async function loadOnDuty() {
+      const now = new Date()
+      const dayOfWeek = now.getUTCDay()
+      const currentTime = now.toISOString().slice(11, 16)
+
+      const { data } = await supabase
+        .from("schedules")
+        .select("technicians(name)")
+        .eq("plant_id", p)
+        .eq("day_of_week", dayOfWeek)
+        .lte("start_time", currentTime)
+        .gte("end_time", currentTime)
+
+      if (data) {
+        const names = data.map((row: any) => row.technicians?.name).filter(Boolean)
+        setOnDuty(names)
+      }
+    }
+
+    loadLogo()
+    loadCalls()
+    loadOnDuty()
 
     const channel = supabase
-      .channel('service_calls_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_calls' }, () => {
-        fetchCalls(p)
-        fetchOnDuty(p)
-      })
+      .channel("board-updates")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "service_calls" },
+        () => {
+          loadCalls()
+          loadOnDuty()
+        }
+      )
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
-  }, [searchParams])
-
-  async function loadPlantLogo(plantId: string) {
-    const { data } = await supabase
-      .from('plants')
-      .select('logo_url')
-      .eq('id', plantId)
-      .maybeSingle()
-    if (data?.logo_url) setLogoUrl(data.logo_url)
-  }
-
-  async function fetchCalls(plantId: string) {
-    const { data } = await supabase
-      .from('service_calls')
-      .select('*')
-      .eq('plant_id', plantId)
-      .in('status', ['Waiting', 'Arrived', 'Needs More Work'])
-      .order('submitted_at', { ascending: false })
-    if (data) setCalls(data)
-  }
-
-  async function fetchOnDuty(plantId: string) {
-    const now = new Date()
-    const dayOfWeek = now.getUTCDay()
-    const currentTime = now.toISOString().slice(11, 16)
-
-    const { data } = await supabase
-      .from('schedules')
-      .select('technicians(name)')
-      .eq('plant_id', plantId)
-      .eq('day_of_week', dayOfWeek)
-      .lte('start_time', currentTime)
-      .gte('end_time', currentTime)
-
-    if (data) {
-      const names = data.map((row: any) => row.technicians?.name).filter(Boolean)
-      setOnDuty(names)
+    return () => {
+      supabase.removeChannel(channel)
     }
-  }
+  }, [plant])
 
-  function priorityColor(priority: string) {
+  const priorityColor = (priority: string) => {
     switch (priority) {
-      case 'Critical': return 'bg-red-500'
-      case 'High': return 'bg-orange-500'
-      case 'Medium': return 'bg-yellow-400'
-      case 'Low': return 'bg-green-500'
-      default: return 'bg-gray-400'
+      case "Critical": return "bg-red-600"
+      case "High": return "bg-orange-500"
+      case "Medium": return "bg-yellow-500"
+      case "Low": return "bg-green-600"
+      default: return "bg-gray-500"
     }
-  }
-
-  function formatTime(iso?: string) {
-    if (!iso) return ''
-    return new Date(iso).toLocaleString()
   }
 
   return (
-    <div className="p-4">
-      <img src={logoUrl || '/logo.png'} alt="logo" className="h-12 mb-4" />
-      <h1 className="text-2xl font-bold mb-1">Live Status Board</h1>
-      <p className="text-sm text-gray-600 mb-1">Plant: {plant}</p>
-      <p className="text-sm mb-4">
-        On duty: {onDuty.length > 0 ? onDuty.join(', ') : 'No one currently scheduled'}
-      </p>
-      <div className="space-y-3">
+    <div className="min-h-screen bg-gray-900 text-white p-6">
+      <div className="flex items-center justify-between mb-8">
+        <img src={logoUrl} alt="logo" className="h-16 object-contain" />
+        <div className="text-right">
+          <h1 className="text-4xl font-bold">Live Status Board</h1>
+          <p className="text-xl text-gray-300">Plant: {plant || "All"}</p>
+          <p className="text-lg text-gray-400">
+            On duty: {onDuty.length > 0 ? onDuty.join(", ") : "No one currently scheduled"}
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        {calls.length === 0 && (
+          <div className="text-center text-3xl text-gray-400 py-20">
+            No open service calls
+          </div>
+        )}
+
         {calls.map((call) => (
-          <div key={call.id} className={`p-4 rounded text-white ${priorityColor(call.priority)}`}>
-            <div className="font-bold">{call.equipment_name} — {call.location}</div>
-            <div className="text-sm">{call.priority} • {call.status}</div>
-            <div className="mt-1">{call.description}</div>
-            {call.submitter_name && <div className="text-xs mt-1">Submitted by: {call.submitter_name}</div>}
-            <div className="text-xs mt-2 opacity-90">
-              Submitted: {formatTime(call.submitted_at)}
-              {call.arrived_at && <> • Arrived: {formatTime(call.arrived_at)}</>}
+          <div
+            key={call.id}
+            className="flex items-stretch gap-6 bg-gray-800 rounded-xl p-5 shadow-lg"
+          >
+            <div className={`w-3 rounded ${priorityColor(call.priority)}`} />
+            <div className="flex-1">
+              <div className="text-3xl font-bold">{call.equipment_name}</div>
+              <div className="text-xl text-gray-300">{call.location}</div>
+              <div className="text-lg mt-1">
+                {call.priority} • {call.status}
+              </div>
+              {call.description && (
+                <div className="mt-2 text-gray-300">{call.description}</div>
+              )}
+              {call.submitter_name && (
+                <div className="text-sm mt-2 text-gray-400">
+                  Submitted by: {call.submitter_name}
+                </div>
+              )}
             </div>
-            {call.photo_url && <img src={call.photo_url} alt="issue" className="mt-2 max-h-40 rounded" />}
+            <div className="text-right text-lg text-gray-400">
+              <div>{new Date(call.submitted_at).toLocaleString()}</div>
+              {call.arrived_at && (
+                <div className="text-sm">Arrived: {new Date(call.arrived_at).toLocaleString()}</div>
+              )}
+            </div>
           </div>
         ))}
-        {calls.length === 0 && <p className="text-gray-600">No open calls for this plant.</p>}
       </div>
     </div>
   )
@@ -126,7 +161,7 @@ function BoardContent() {
 
 export default function BoardPage() {
   return (
-    <Suspense fallback={<div className="p-6 text-center">Loading...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-gray-900 text-white flex items-center justify-center text-2xl">Loading board…</div>}>
       <BoardContent />
     </Suspense>
   )
