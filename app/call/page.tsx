@@ -1,5 +1,4 @@
 'use client'
-
 import { Suspense, useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
@@ -20,6 +19,7 @@ const translations = {
     arrived: 'Arrived',
     completed: 'Completed',
     needsMore: 'Needs More Work',
+    moreWorkNote: 'What additional work is needed?',
     currentCall: 'Current Call',
     critical: 'Critical',
     high: 'High',
@@ -41,6 +41,7 @@ const translations = {
     arrived: 'Llegué',
     completed: 'Completado',
     needsMore: 'Necesita Más Trabajo',
+    moreWorkNote: '¿Qué trabajo adicional se necesita?',
     currentCall: 'Llamada Actual',
     critical: 'Crítico',
     high: 'Alto',
@@ -64,7 +65,7 @@ function CallForm() {
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [existingCall, setExistingCall] = useState<any>(null)
-
+  const [moreWorkNote, setMoreWorkNote] = useState('')
   const t = translations[lang]
 
   useEffect(() => {
@@ -104,25 +105,19 @@ function CallForm() {
     const key = 'qrcall_last_submit'
     const last = localStorage.getItem(key)
     const now = Date.now()
-    if (last && now - parseInt(last) < 60_000) return true // 1 per minute
+    if (last && now - parseInt(last) < 60_000) return true
     localStorage.setItem(key, now.toString())
     return false
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-
-    // Honeypot – bots fill this
     if (honeypot) return
-
-    // Simple rate limit
     if (isRateLimited()) {
       alert('Please wait a minute before submitting another call.')
       return
     }
-
     setLoading(true)
-
     let photoUrl = null
     if (photo) {
       const fileName = `${Date.now()}-${photo.name}`
@@ -132,7 +127,6 @@ function CallForm() {
         photoUrl = urlData.publicUrl
       }
     }
-
     const { error } = await supabase.from('service_calls').insert({
       equipment_name: equip,
       location: loc,
@@ -144,7 +138,6 @@ function CallForm() {
       plant_id: plant,
       submitter_name: submitter,
     })
-
     setLoading(false)
     if (!error) setSubmitted(true)
     else alert('Error: ' + (error.message || JSON.stringify(error)))
@@ -154,11 +147,20 @@ function CallForm() {
     if (!existingCall) return
     const updates: any = { status: newStatus }
     if (newStatus === 'Arrived') updates.arrived_at = new Date().toISOString()
+    if (newStatus === 'Needs More Work') {
+      updates.updated_at = new Date().toISOString()
+      if (moreWorkNote) updates.description = moreWorkNote
+    }
     if (newStatus === 'Completed') updates.completed_at = new Date().toISOString()
 
     await supabase.from('service_calls').update(updates).eq('id', existingCall.id)
-    if (newStatus === 'Completed') setExistingCall(null)
-    else setExistingCall({ ...existingCall, status: newStatus })
+
+    if (newStatus === 'Completed') {
+      setExistingCall(null)
+    } else {
+      setExistingCall({ ...existingCall, status: newStatus, description: moreWorkNote || existingCall.description })
+    }
+    setMoreWorkNote('')
   }
 
   if (submitted) {
@@ -195,12 +197,46 @@ function CallForm() {
           <div>{existingCall.description}</div>
           {existingCall.submitter_name && <div className="text-sm">Submitted by: {existingCall.submitter_name}</div>}
           {existingCall.photo_url && <img src={existingCall.photo_url} alt="issue" className="mt-2 max-h-40 rounded" />}
-          <div className="flex flex-wrap gap-2 pt-2">
-            {existingCall.status !== 'Arrived' && existingCall.status !== 'Completed' && (
-              <button onClick={() => updateStatus('Arrived')} className="bg-blue-600 text-white px-4 py-2 rounded">{t.arrived}</button>
+
+          <div className="space-y-3 pt-3">
+            {/* Arrived button only shows while still Waiting */}
+            {existingCall.status === 'Waiting' && (
+              <button
+                onClick={() => updateStatus('Arrived')}
+                className="w-full bg-blue-600 text-white py-2 rounded font-medium"
+              >
+                {t.arrived}
+              </button>
             )}
-            <button onClick={() => updateStatus('Needs More Work')} className="bg-orange-600 text-white px-4 py-2 rounded">{t.needsMore}</button>
-            <button onClick={() => updateStatus('Completed')} className="bg-green-600 text-white px-4 py-2 rounded">{t.completed}</button>
+
+            {/* Needs More Work + note + Completed show after Arrived */}
+            {(existingCall.status === 'Arrived' || existingCall.status === 'Needs More Work') && (
+              <>
+                <button
+                  onClick={() => updateStatus('Needs More Work')}
+                  className="w-full bg-orange-600 text-white py-2 rounded font-medium"
+                >
+                  {t.needsMore}
+                </button>
+
+                {existingCall.status === 'Needs More Work' && (
+                  <textarea
+                    placeholder={t.moreWorkNote}
+                    value={moreWorkNote}
+                    onChange={(e) => setMoreWorkNote(e.target.value)}
+                    className="w-full border rounded p-2"
+                    rows={3}
+                  />
+                )}
+
+                <button
+                  onClick={() => updateStatus('Completed')}
+                  className="w-full bg-green-600 text-white py-2 rounded font-medium"
+                >
+                  {t.completed}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -217,7 +253,6 @@ function CallForm() {
       </div>
       <h1 className="text-2xl font-bold mb-4">{t.title}</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Honeypot – hidden from users */}
         <input
           type="text"
           name="website"
