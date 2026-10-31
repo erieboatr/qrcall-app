@@ -55,7 +55,7 @@ const translations = {
 function CallForm() {
   const searchParams = useSearchParams()
   const [lang, setLang] = useState<'en' | 'es'>('en')
-  const [plant, setPlant] = useState('default')
+  const [plant, setPlant] = useState('QRcall')
   const [logoUrl, setLogoUrl] = useState<string | null>(null)
   const [equip, setEquip] = useState('')
   const [loc, setLoc] = useState('')
@@ -71,7 +71,7 @@ function CallForm() {
   const t = translations[lang]
 
   useEffect(() => {
-    const p = searchParams.get('plant') || 'default'
+    const p = searchParams.get('plant') || 'QRcall'
     const eq = searchParams.get('equip') || ''
     const lc = searchParams.get('loc') || ''
     setPlant(p)
@@ -152,23 +152,40 @@ function CallForm() {
 
   async function updateStatus(newStatus: string) {
     if (!existingCall) return
+
     const updates: any = { status: newStatus }
-    if (newStatus === 'Arrived') updates.arrived_at = new Date().toISOString()
+
+    if (newStatus === 'Arrived') {
+      updates.arrived_at = new Date().toISOString()
+    }
+
     if (newStatus === 'Needs More Work') {
       updates.updated_at = new Date().toISOString()
-      if (moreWorkNote.trim()) updates.description = moreWorkNote.trim()
+      if (moreWorkNote.trim()) {
+        updates.description = moreWorkNote.trim()
+      }
     }
-    if (newStatus === 'Completed') updates.completed_at = new Date().toISOString()
 
-    await supabase.from('service_calls').update(updates).eq('id', existingCall.id)
+    if (newStatus === 'Completed') {
+      updates.completed_at = new Date().toISOString()
+    }
+
+    const { error } = await supabase
+      .from('service_calls')
+      .update(updates)
+      .eq('id', existingCall.id)
+
+    if (error) {
+      alert('Update failed: ' + error.message)
+      return
+    }
 
     if (newStatus === 'Completed') {
       setExistingCall(null)
     } else {
       setExistingCall({
         ...existingCall,
-        status: newStatus,
-        description: moreWorkNote.trim() || existingCall.description,
+        ...updates,
       })
     }
     setMoreWorkNote('')
