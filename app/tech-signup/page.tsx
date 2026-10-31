@@ -11,7 +11,7 @@ const supabase = createClient(
 
 function SignupForm() {
   const searchParams = useSearchParams()
-  const plantId = searchParams.get("plant") || ""
+  const plantId = searchParams.get("plant") || "QRcall"
 
   const [plantName, setPlantName] = useState("QRcall")
   const [logoUrl, setLogoUrl] = useState("/logo.png")
@@ -122,9 +122,11 @@ function SignupForm() {
               className="mt-1"
             />
             <label className="text-sm text-gray-700">
-              I agree to receive recurring service-call alert text messages from {plantName} via QRcall. 
-              Message frequency varies. Message and data rates may apply. 
-              Reply STOP to opt out and HELP for help. Consent is not a condition of employment.
+              By checking this box and submitting this form, you consent to receive transactional text messages for repair and diagnostics alerts from QRcall.app. 
+              Reply STOP to opt out. Reply HELP for help. 
+              Standard message and data rates may apply. Message frequency may vary. 
+              View our <a href="/terms" className="text-blue-600 underline">Terms and Conditions</a> and 
+              <a href="/privacy" className="text-blue-600 underline"> Privacy Policy</a>.
             </label>
           </div>
 

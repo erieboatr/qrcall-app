@@ -17,6 +17,9 @@ export default function Privacy() {
         We use your phone number solely to send operational SMS alerts about equipment service calls. 
         We do not sell or share your information with third parties for marketing.
       </p>
+      <p className="mb-4">
+        We will not share or sell your mobile information with third parties for promotional or marketing purposes.
+      </p>
       <h2 className="text-xl font-semibold mt-6 mb-2">Opt-Out</h2>
       <p className="mb-4">
         You may opt out at any time by replying STOP to any message. 
