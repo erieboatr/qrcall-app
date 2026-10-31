@@ -129,7 +129,7 @@ function CallForm() {
         photoUrl = urlData.publicUrl
       }
     }
-  
+
     const { error } = await supabase.from('service_calls').insert({
       equipment_name: equip,
       location: loc,
@@ -141,7 +141,7 @@ function CallForm() {
       plant_id: plant,
       submitter_name: submitter,
     })
-  
+
     setLoading(false)
     if (!error) {
       setSubmitted(true)
@@ -149,3 +149,178 @@ function CallForm() {
       alert('Error: ' + (error.message || JSON.stringify(error)))
     }
   }
+
+  async function updateStatus(newStatus: string) {
+    if (!existingCall) return
+    const updates: any = { status: newStatus }
+    if (newStatus === 'Arrived') updates.arrived_at = new Date().toISOString()
+    if (newStatus === 'Needs More Work') {
+      updates.updated_at = new Date().toISOString()
+      if (moreWorkNote.trim()) updates.description = moreWorkNote.trim()
+    }
+    if (newStatus === 'Completed') updates.completed_at = new Date().toISOString()
+
+    await supabase.from('service_calls').update(updates).eq('id', existingCall.id)
+
+    if (newStatus === 'Completed') {
+      setExistingCall(null)
+    } else {
+      setExistingCall({
+        ...existingCall,
+        status: newStatus,
+        description: moreWorkNote.trim() || existingCall.description,
+      })
+    }
+    setMoreWorkNote('')
+  }
+
+  if (submitted) {
+    return (
+      <div className="p-6 text-center">
+        <img src={logoUrl || '/logo.png'} alt="logo" className="h-12 mx-auto mb-4" />
+        <h1 className="text-2xl font-bold text-green-600">{t.successTitle}</h1>
+        <p className="mt-2">{t.successMsg}</p>
+        <div className="mt-6 space-y-3">
+          <a href={`/call?plant=${plant}&equip=${encodeURIComponent(equip)}&loc=${encodeURIComponent(loc)}`} className="block w-full bg-blue-600 text-white py-2 rounded font-medium">
+            Back to this machine
+          </a>
+          <a href={`/board?plant=${plant}`} className="block w-full bg-gray-600 text-white py-2 rounded font-medium">
+            View Status Board
+          </a>
+        </div>
+      </div>
+    )
+  }
+
+  if (existingCall) {
+    return (
+      <div className="max-w-md mx-auto p-4">
+        <img src={logoUrl || '/logo.png'} alt="logo" className="h-12 mx-auto mb-4" />
+        <div className="flex justify-end mb-2">
+          <button type="button" onClick={() => setLang(lang === 'en' ? 'es' : 'en')} className="text-sm px-3 py-1 border rounded">
+            {lang === 'en' ? 'Español' : 'English'}
+          </button>
+        </div>
+        <h1 className="text-2xl font-bold mb-4">{t.currentCall}</h1>
+        <div className="bg-white border rounded p-4 space-y-2">
+          <div><strong>{existingCall.equipment_name}</strong> — {existingCall.location}</div>
+          <div>{existingCall.priority} • {existingCall.status}</div>
+          <div>{existingCall.description}</div>
+          {existingCall.submitter_name && <div className="text-sm">Submitted by: {existingCall.submitter_name}</div>}
+          {existingCall.photo_url && <img src={existingCall.photo_url} alt="issue" className="mt-2 max-h-40 rounded" />}
+
+          <div className="space-y-3 pt-3">
+            {existingCall.status === 'Waiting' && (
+              <button
+                onClick={() => updateStatus('Arrived')}
+                className="w-full bg-blue-600 text-white py-2 rounded font-medium"
+              >
+                {t.arrived}
+              </button>
+            )}
+
+            {(existingCall.status === 'Arrived' || existingCall.status === 'Needs More Work') && (
+              <>
+                <button
+                  onClick={() => setExistingCall({ ...existingCall, status: 'Needs More Work' })}
+                  className="w-full bg-orange-600 text-white py-2 rounded font-medium"
+                >
+                  {t.needsMore}
+                </button>
+
+                {existingCall.status === 'Needs More Work' && (
+                  <>
+                    <textarea
+                      placeholder={t.moreWorkNote}
+                      value={moreWorkNote}
+                      onChange={(e) => setMoreWorkNote(e.target.value)}
+                      className="w-full border rounded p-2"
+                      rows={3}
+                    />
+                    <button
+                      onClick={() => updateStatus('Needs More Work')}
+                      disabled={!moreWorkNote.trim()}
+                      className="w-full bg-orange-700 text-white py-2 rounded font-medium disabled:opacity-50"
+                    >
+                      {t.saveNote}
+                    </button>
+                  </>
+                )}
+
+                <button
+                  onClick={() => updateStatus('Completed')}
+                  className="w-full bg-green-600 text-white py-2 rounded font-medium"
+                >
+                  {t.completed}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="max-w-md mx-auto p-4">
+      <img src={logoUrl || '/logo.png'} alt="logo" className="h-12 mx-auto mb-4" />
+      <div className="flex justify-end mb-2">
+        <button type="button" onClick={() => setLang(lang === 'en' ? 'es' : 'en')} className="text-sm px-3 py-1 border rounded">
+          {lang === 'en' ? 'Español' : 'English'}
+        </button>
+      </div>
+      <h1 className="text-2xl font-bold mb-4">{t.title}</h1>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <input
+          type="text"
+          name="website"
+          value={honeypot}
+          onChange={e => setHoneypot(e.target.value)}
+          style={{ display: 'none' }}
+          tabIndex={-1}
+          autoComplete="off"
+        />
+        <div>
+          <label className="block text-sm font-medium">{t.submitter}</label>
+          <input className="w-full border rounded p-2" value={submitter} onChange={(e) => setSubmitter(e.target.value)} required />
+        </div>
+        <div>
+          <label className="block text-sm font-medium">{t.equipment}</label>
+          <input className="w-full border rounded p-2" value={equip} onChange={(e) => setEquip(e.target.value)} required />
+        </div>
+        <div>
+          <label className="block text-sm font-medium">{t.location}</label>
+          <input className="w-full border rounded p-2" value={loc} onChange={(e) => setLoc(e.target.value)} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium">{t.priority}</label>
+          <select className="w-full border rounded p-2" value={priority} onChange={(e) => setPriority(e.target.value)}>
+            <option value="Critical">{t.critical}</option>
+            <option value="High">{t.high}</option>
+            <option value="Medium">{t.medium}</option>
+            <option value="Low">{t.low}</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium">{t.description}</label>
+          <textarea className="w-full border rounded p-2" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium">{t.photo}</label>
+          <input type="file" accept="image/*" onChange={(e) => setPhoto(e.target.files?.[0] || null)} />
+        </div>
+        <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white py-2 rounded font-medium">
+          {loading ? t.submitting : t.submit}
+        </button>
+      </form>
+    </div>
+  )
+}
+
+export default function CallPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-center">Loading...</div>}>
+      <CallForm />
+    </Suspense>
+  )
+}
