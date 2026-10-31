@@ -142,12 +142,23 @@ function BoardContent() {
                 {call.priority} • {call.status}
               </div>
 
-              {call.description && (
-                <div className={`mt-2 ${call.status === "Needs More Work" ? "p-3 bg-orange-900/40 border border-orange-500 rounded-lg" : "text-gray-300"}`}>
-                  {call.status === "Needs More Work" && (
-                    <div className="text-sm font-semibold text-orange-300 mb-1">Additional work needed:</div>
+              {/* Original description (hidden when Needs More Work) */}
+              {call.description && call.status !== "Needs More Work" && (
+                <div className="mt-2 text-gray-300">{call.description}</div>
+              )}
+
+              {/* Separate Additional Work block */}
+              {call.status === "Needs More Work" && call.description && (
+                <div className="mt-3 p-4 bg-orange-900/60 border-l-4 border-orange-500 rounded-r-lg">
+                  <div className="text-sm font-bold text-orange-300 uppercase tracking-wide">
+                    Needs Additional Work
+                  </div>
+                  <div className="mt-1 text-white text-lg">{call.description}</div>
+                  {call.updated_at && (
+                    <div className="text-xs text-orange-200 mt-2">
+                      Updated: {new Date(call.updated_at).toLocaleString()}
+                    </div>
                   )}
-                  <div>{call.description}</div>
                 </div>
               )}
 
