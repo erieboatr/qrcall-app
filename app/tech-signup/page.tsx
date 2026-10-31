@@ -19,7 +19,6 @@ function SignupForm() {
   const [phone, setPhone] = useState("")
   const [language, setLanguage] = useState("en")
   const [consent, setConsent] = useState(false)
-  const [privacyAccepted, setPrivacyAccepted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
   const [error, setError] = useState("")
@@ -39,8 +38,8 @@ function SignupForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!consent || !privacyAccepted) {
-      setError("You must agree to receive messages and accept the Privacy Policy and Terms.")
+    if (!consent) {
+      setError("You must agree to receive messages.")
       return
     }
     setLoading(true)
@@ -52,7 +51,6 @@ function SignupForm() {
       language,
       plant_id: plantId || null,
       active: true,
-      privacy_accepted: privacyAccepted,
     })
 
     setLoading(false)
@@ -115,7 +113,7 @@ function SignupForm() {
             </select>
           </div>
 
-          {/* SMS Consent - separate checkbox */}
+          {/* SMS Consent checkbox only */}
           <div className="flex items-start gap-2">
             <input
               type="checkbox"
@@ -128,21 +126,6 @@ function SignupForm() {
               By checking this box and submitting this form, you consent to receive transactional text messages for repair and diagnostics alerts from QRcall.app. 
               Reply STOP to opt out. Reply HELP for help. 
               Standard message and data rates may apply. Message frequency may vary.
-            </label>
-          </div>
-
-          {/* Privacy Policy + Terms - separate checkbox */}
-          <div className="flex items-start gap-2">
-            <input
-              type="checkbox"
-              required
-              checked={privacyAccepted}
-              onChange={(e) => setPrivacyAccepted(e.target.checked)}
-              className="mt-1"
-            />
-            <label className="text-sm text-gray-700">
-              I have read and agree to the <a href="/privacy" className="text-blue-600 underline">Privacy Policy</a> and 
-              <a href="/terms" className="text-blue-600 underline"> Terms of Service</a>.
             </label>
           </div>
 
