@@ -20,6 +20,7 @@ const translations = {
     completed: 'Completed',
     needsMore: 'Needs More Work',
     moreWorkNote: 'What additional work is needed?',
+    saveNote: 'Save Additional Work Note',
     currentCall: 'Current Call',
     critical: 'Critical',
     high: 'High',
@@ -42,6 +43,7 @@ const translations = {
     completed: 'Completado',
     needsMore: 'Necesita Más Trabajo',
     moreWorkNote: '¿Qué trabajo adicional se necesita?',
+    saveNote: 'Guardar Nota de Trabajo',
     currentCall: 'Llamada Actual',
     critical: 'Crítico',
     high: 'Alto',
@@ -149,7 +151,7 @@ function CallForm() {
     if (newStatus === 'Arrived') updates.arrived_at = new Date().toISOString()
     if (newStatus === 'Needs More Work') {
       updates.updated_at = new Date().toISOString()
-      if (moreWorkNote) updates.description = moreWorkNote
+      if (moreWorkNote.trim()) updates.description = moreWorkNote.trim()
     }
     if (newStatus === 'Completed') updates.completed_at = new Date().toISOString()
 
@@ -158,7 +160,11 @@ function CallForm() {
     if (newStatus === 'Completed') {
       setExistingCall(null)
     } else {
-      setExistingCall({ ...existingCall, status: newStatus, description: moreWorkNote || existingCall.description })
+      setExistingCall({
+        ...existingCall,
+        status: newStatus,
+        description: moreWorkNote.trim() || existingCall.description,
+      })
     }
     setMoreWorkNote('')
   }
@@ -199,7 +205,6 @@ function CallForm() {
           {existingCall.photo_url && <img src={existingCall.photo_url} alt="issue" className="mt-2 max-h-40 rounded" />}
 
           <div className="space-y-3 pt-3">
-            {/* Arrived button only shows while still Waiting */}
             {existingCall.status === 'Waiting' && (
               <button
                 onClick={() => updateStatus('Arrived')}
@@ -209,24 +214,32 @@ function CallForm() {
               </button>
             )}
 
-            {/* Needs More Work + note + Completed show after Arrived */}
             {(existingCall.status === 'Arrived' || existingCall.status === 'Needs More Work') && (
               <>
                 <button
-                  onClick={() => updateStatus('Needs More Work')}
+                  onClick={() => setExistingCall({ ...existingCall, status: 'Needs More Work' })}
                   className="w-full bg-orange-600 text-white py-2 rounded font-medium"
                 >
                   {t.needsMore}
                 </button>
 
                 {existingCall.status === 'Needs More Work' && (
-                  <textarea
-                    placeholder={t.moreWorkNote}
-                    value={moreWorkNote}
-                    onChange={(e) => setMoreWorkNote(e.target.value)}
-                    className="w-full border rounded p-2"
-                    rows={3}
-                  />
+                  <>
+                    <textarea
+                      placeholder={t.moreWorkNote}
+                      value={moreWorkNote}
+                      onChange={(e) => setMoreWorkNote(e.target.value)}
+                      className="w-full border rounded p-2"
+                      rows={3}
+                    />
+                    <button
+                      onClick={() => updateStatus('Needs More Work')}
+                      disabled={!moreWorkNote.trim()}
+                      className="w-full bg-orange-700 text-white py-2 rounded font-medium disabled:opacity-50"
+                    >
+                      {t.saveNote}
+                    </button>
+                  </>
                 )}
 
                 <button
