@@ -120,36 +120,32 @@ function CallForm() {
       return
     }
     setLoading(true)
-      let photoUrl = null
-      if (photo) {
-        const fileName = `${Date.now()}-${photo.name}`
-        const { error: uploadError } = await supabase.storage.from('call-photos').upload(fileName, photo)
-        if (!uploadError) {
-          const { data: urlData } = supabase.storage.from('call-photos').getPublicUrl(fileName)
-          photoUrl = urlData.publicUrl
-        }
+    let photoUrl = null
+    if (photo) {
+      const fileName = `${Date.now()}-${photo.name}`
+      const { error: uploadError } = await supabase.storage.from('call-photos').upload(fileName, photo)
+      if (!uploadError) {
+        const { data: urlData } = supabase.storage.from('call-photos').getPublicUrl(fileName)
+        photoUrl = urlData.publicUrl
       }
-      
-      const { data, error } = await supabase.from("service_calls").insert({
-        equipment_name: equip,
-        location: loc,
-        priority,
-        description,
-        photo_url: photoUrl,
-        status: "Waiting",
-        language: lang,
-        plant_id: plant,
-        submitter_name: submitter,
-      }).select()
-      
-      setLoading(false)
-      
-      if (error) {
-        alert("Insert failed:\n" + JSON.stringify(error, null, 2))
-        console.error(error)
-        return
-      }
-      
-      alert("Success! Call saved.")
+    }
+  
+    const { error } = await supabase.from('service_calls').insert({
+      equipment_name: equip,
+      location: loc,
+      priority,
+      description,
+      photo_url: photoUrl,
+      status: 'Waiting',
+      language: lang,
+      plant_id: plant,
+      submitter_name: submitter,
+    })
+  
+    setLoading(false)
+    if (!error) {
       setSubmitted(true)
-      }
+    } else {
+      alert('Error: ' + (error.message || JSON.stringify(error)))
+    }
+  }
