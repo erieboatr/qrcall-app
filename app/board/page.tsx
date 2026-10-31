@@ -26,19 +26,17 @@ type Call = {
 
 function BoardContent() {
   const searchParams = useSearchParams()
-  const plant = searchParams.get("plant") || ""
+  const plant = searchParams.get("plant") || "QRcall"
   const [calls, setCalls] = useState<Call[]>([])
   const [onDuty, setOnDuty] = useState<string[]>([])
   const [logoUrl, setLogoUrl] = useState("/logo.png")
 
   useEffect(() => {
-    const p = plant || "default"
-
     async function loadLogo() {
       const { data } = await supabase
         .from("plants")
         .select("logo_url")
-        .eq("id", p)
+        .eq("id", plant)
         .maybeSingle()
       if (data?.logo_url) setLogoUrl(data.logo_url)
     }
@@ -50,7 +48,9 @@ function BoardContent() {
         .in("status", ["Waiting", "Arrived", "Needs More Work"])
         .order("submitted_at", { ascending: false })
 
-      if (plant) query = query.eq("plant_id", plant)
+      if (plant) {
+        query = query.eq("plant_id", plant)
+      }
 
       const { data } = await query
       setCalls(data || [])
@@ -64,7 +64,7 @@ function BoardContent() {
       const { data } = await supabase
         .from("schedules")
         .select("technicians(name)")
-        .eq("plant_id", p)
+        .eq("plant_id", plant)
         .eq("day_of_week", dayOfWeek)
         .lte("start_time", currentTime)
         .gte("end_time", currentTime)
@@ -72,6 +72,8 @@ function BoardContent() {
       if (data) {
         const names = data.map((row: any) => row.technicians?.name).filter(Boolean)
         setOnDuty(names)
+      } else {
+        setOnDuty([])
       }
     }
 
@@ -112,7 +114,7 @@ function BoardContent() {
         <img src={logoUrl} alt="logo" className="h-16 object-contain" />
         <div className="text-right">
           <h1 className="text-4xl font-bold">Live Status Board</h1>
-          <p className="text-xl text-gray-300">Plant: {plant || "All"}</p>
+          <p className="text-xl text-gray-300">Plant: {plant}</p>
           <p className="text-lg text-gray-400">
             On duty: {onDuty.length > 0 ? onDuty.join(", ") : "No one currently scheduled"}
           </p>
