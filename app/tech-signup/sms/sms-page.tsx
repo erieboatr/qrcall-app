@@ -38,7 +38,7 @@ function SignupForm() {
 
   useEffect(() => {
     if (localStorage.getItem("signup_terms") !== "true" || localStorage.getItem("signup_privacy") !== "true") {
-      window.location.href = "/signup/terms"
+      window.location.href = "/tech-signup/terms"
     }
   }, [])
 
@@ -155,7 +155,7 @@ function SignupForm() {
   )
 }
 
-export default function TechSignupPage() {
+export default function SmsStep() {
   return (
     <Suspense fallback={<div className="p-6 text-center">Loading…</div>}>
       <SignupForm />
