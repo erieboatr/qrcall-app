@@ -36,6 +36,12 @@ function SignupForm() {
       })
   }, [plantId])
 
+  useEffect(() => {
+    if (localStorage.getItem("signup_terms") !== "true" || localStorage.getItem("signup_privacy") !== "true") {
+      window.location.href = "/signup/terms"
+    }
+  }, [])
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!consent) {
@@ -113,7 +119,6 @@ function SignupForm() {
             </select>
           </div>
 
-          {/* SMS Consent checkbox only */}
           <div className="flex items-start gap-2">
             <input
               type="checkbox"
