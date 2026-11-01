@@ -60,9 +60,28 @@ function SignupForm() {
       privacy_accepted: true,
     })
 
+    if (error) {
+      setLoading(false)
+      setError(error.message)
+      return
+    }
+
+    // Send opt-in confirmation text
+    try {
+      await fetch("https://slrxmogriwsnbondquwq.supabase.co/functions/v1/send-optin-confirm", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ phone, plantName }),
+      })
+    } catch (err) {
+      console.error("Opt-in text failed:", err)
+    }
+
     setLoading(false)
-    if (error) setError(error.message)
-    else setDone(true)
+    setDone(true)
   }
 
   if (done) {
