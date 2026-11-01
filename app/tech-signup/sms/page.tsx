@@ -57,6 +57,7 @@ function SignupForm() {
       language,
       plant_id: plantId || null,
       active: true,
+      privacy_accepted: true,
     })
 
     setLoading(false)
