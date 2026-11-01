@@ -67,9 +67,25 @@
     document.getElementById("plant").textContent = "Plant: " + plant
 
     async function load() {
+      // Logo
       const { data: plantData } = await client.from("plants").select("logo_url").eq("id", plant).maybeSingle()
       if (plantData?.logo_url) document.getElementById("logo").src = plantData.logo_url
 
+      // On duty
+      const now = new Date()
+      const day = now.getDay()
+      const time = now.toTimeString().slice(0, 5)
+      const { data: schedules } = await client
+        .from("schedules")
+        .select("technicians(name)")
+        .eq("plant_id", plant)
+        .eq("day_of_week", day)
+        .lte("start_time", time)
+        .gte("end_time", time)
+      const names = (schedules || []).map(s => s.technicians?.name).filter(Boolean)
+      document.getElementById("onduty").textContent = names.length > 0 ? "On duty: " + names.join(", ") : "On duty: No one scheduled"
+
+      // Calls
       const { data: calls } = await client
         .from("service_calls")
         .select("*")
