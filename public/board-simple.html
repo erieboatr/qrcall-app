@@ -17,30 +17,31 @@
       align-items: center;
       margin-bottom: 30px;
     }
-    .header img { height: 60px; }
-    .header h1 { margin: 0; font-size: 36px; }
-    .header p { margin: 4px 0; color: #9ca3af; }
+    .header img { height: 70px; }
+    .header h1 { margin: 0; font-size: 42px; }
+    .header p { margin: 6px 0; color: #e5e7eb; font-size: 22px; }
+    #onduty { font-size: 24px; font-weight: bold; color: #fbbf24; }
     .call {
       background: #1f2937;
       border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
       display: flex;
     }
     .bar {
-      width: 8px;
-      border-radius: 4px;
-      margin-right: 16px;
+      width: 12px;
+      border-radius: 6px;
+      margin-right: 20px;
     }
     .critical { background: #dc2626; }
     .high { background: #f97316; }
     .medium { background: #eab308; }
     .low { background: #16a34a; }
-    .equip { font-size: 28px; font-weight: bold; }
-    .loc { font-size: 18px; color: #d1d5db; }
-    .status { font-size: 16px; margin-top: 4px; }
-    .desc { margin-top: 8px; color: #d1d5db; }
-    .meta { margin-left: auto; text-align: right; font-size: 14px; color: #9ca3af; }
+    .equip { font-size: 32px; font-weight: bold; }
+    .loc { font-size: 22px; color: #d1d5db; margin-top: 4px; }
+    .status { font-size: 22px; font-weight: bold; margin-top: 8px; color: #fbbf24; }
+    .desc { margin-top: 10px; font-size: 18px; color: #d1d5db; }
+    .meta { margin-left: auto; text-align: right; font-size: 16px; color: #9ca3af; }
   </style>
 </head>
 <body>
@@ -67,11 +68,9 @@
     document.getElementById("plant").textContent = "Plant: " + plant
 
     async function load() {
-      // Logo
       const { data: plantData } = await client.from("plants").select("logo_url").eq("id", plant).maybeSingle()
       if (plantData?.logo_url) document.getElementById("logo").src = plantData.logo_url
 
-      // On duty
       const now = new Date()
       const day = now.getDay()
       const time = now.toTimeString().slice(0, 5)
@@ -85,7 +84,6 @@
       const names = (schedules || []).map(s => s.technicians?.name).filter(Boolean)
       document.getElementById("onduty").textContent = names.length > 0 ? "On duty: " + names.join(", ") : "On duty: No one scheduled"
 
-      // Calls
       const { data: calls } = await client
         .from("service_calls")
         .select("*")
