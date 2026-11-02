@@ -66,7 +66,6 @@ function SignupForm() {
       return
     }
 
-    // Send opt-in confirmation text
     try {
       await fetch("https://slrxmogriwsnbondquwq.supabase.co/functions/v1/send-optin-confirm", {
         method: "POST",
@@ -139,19 +138,30 @@ function SignupForm() {
             </select>
           </div>
 
-          <div className="flex items-start gap-2">
-            <input
-              type="checkbox"
-              required
-              checked={consent}
-              onChange={(e) => setConsent(e.target.checked)}
-              className="mt-1"
-            />
-            <label className="text-sm text-gray-700">
-              By checking this box and submitting this form, you consent to receive transactional text messages for repair and diagnostics alerts from QRcall.app. 
-              Reply STOP to opt out. Reply HELP for help. 
-              Standard message and data rates may apply. Message frequency may vary.
-            </label>
+          <div className="border rounded-lg p-4 bg-gray-50">
+            <h3 className="font-semibold mb-2">Communication Preferences</h3>
+            <p className="text-sm text-gray-600 mb-3">How and why do you prefer we contact you.</p>
+
+            <div className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                id="sms-consent"
+                required
+                checked={consent}
+                onChange={(e) => setConsent(e.target.checked)}
+                className="mt-1"
+              />
+              <label htmlFor="sms-consent" className="text-sm text-gray-700">
+                <span className="font-medium">Service Communications</span><br />
+                By checking this box, you agree to receive service communications via SMS notifications from <strong>QRcall</strong>.
+                <ul className="list-disc ml-5 mt-1">
+                  <li>These messages may include important information about equipment service calls.</li>
+                  <li>Message frequency may vary.</li>
+                  <li>Message and data rates may apply.</li>
+                  <li>Reply STOP to opt out. Reply HELP for help.</li>
+                </ul>
+              </label>
+            </div>
           </div>
 
           {error && <p className="text-red-600 text-sm">{error}</p>}
@@ -166,9 +176,9 @@ function SignupForm() {
         </form>
 
         <div className="mt-4 text-center text-sm">
-          <a href="/privacy" className="text-red-600 hover:underline">Privacy Policy</a>
+          <a href="/tech-signup/privacy" className="text-red-600 hover:underline">Privacy Policy</a>
           <span className="mx-2 text-gray-400">|</span>
-          <a href="/terms" className="text-red-600 hover:underline">Terms of Service</a>
+          <a href="/tech-signup/terms" className="text-red-600 hover:underline">Terms and Conditions</a>
         </div>
       </div>
     </div>
