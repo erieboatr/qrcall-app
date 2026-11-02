@@ -158,6 +158,7 @@ function SignupForm() {
                   <li>These messages may include important information about equipment service calls.</li>
                   <li>Message frequency may vary.</li>
                   <li>Message and data rates may apply.</li>
+                  <li>Your mobile phone number will not be sold or shared with third parties for promotional or marketing purposes.</li>
                   <li>Reply STOP to opt out. Reply HELP for help.</li>
                 </ul>
               </label>
