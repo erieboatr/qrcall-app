@@ -11,7 +11,7 @@ const supabase = createClient(
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
-// Temporary plant passwords (move to plants table later)
+// Temporary plant passwords
 const PLANT_PASSWORDS: Record<string, string> = {
   ppi: "ppi2026",
   QRcall: "qrcall2026",
@@ -29,7 +29,7 @@ function PlantAdmin() {
   const [schedule, setSchedule] = useState<any[]>([])
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState("")
-  const [viewMode, setViewMode] = useState("edit")
+  const [selectedTechId, setSelectedTechId] = useState("")
 
   // New tech form
   const [newName, setNewName] = useState("")
@@ -71,11 +71,8 @@ function PlantAdmin() {
   function tryUnlock(e: React.FormEvent) {
     e.preventDefault()
     const expected = PLANT_PASSWORDS[plantId] || "admin"
-    if (password === expected) {
-      setUnlocked(true)
-    } else {
-      alert("Wrong password")
-    }
+    if (password === expected) setUnlocked(true)
+    else alert("Wrong password")
   }
 
   function getShift(day: number) {
@@ -141,6 +138,9 @@ function PlantAdmin() {
     load()
   }
 
+  // Days this selected technician is scheduled
+  const selectedTechSchedule = schedule.filter(s => s.technician_id === selectedTechId)
+
   if (!unlocked) {
     return (
       <div className="max-w-sm mx-auto p-6 mt-20">
@@ -188,23 +188,9 @@ function PlantAdmin() {
         </div>
 
         <form onSubmit={addTech} className="flex gap-2 items-end">
-          <input
-            placeholder="Name"
-            className="border rounded px-2 py-1 flex-1"
-            value={newName}
-            onChange={e => setNewName(e.target.value)}
-          />
-          <input
-            placeholder="Phone"
-            className="border rounded px-2 py-1 w-36"
-            value={newPhone}
-            onChange={e => setNewPhone(e.target.value)}
-          />
-          <select
-            className="border rounded px-2 py-1"
-            value={newLang}
-            onChange={e => setNewLang(e.target.value)}
-          >
+          <input placeholder="Name" className="border rounded px-2 py-1 flex-1" value={newName} onChange={e => setNewName(e.target.value)} />
+          <input placeholder="Phone" className="border rounded px-2 py-1 w-36" value={newPhone} onChange={e => setNewPhone(e.target.value)} />
+          <select className="border rounded px-2 py-1" value={newLang} onChange={e => setNewLang(e.target.value)}>
             <option value="en">EN</option>
             <option value="es">ES</option>
           </select>
@@ -212,78 +198,68 @@ function PlantAdmin() {
         </form>
       </div>
 
-      {/* Schedule */}
-      <div className="border rounded-lg p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold">Weekly Schedule</h2>
-          <select
-            className="border rounded px-2 py-1 text-sm"
-            value={viewMode}
-            onChange={e => setViewMode(e.target.value)}
-          >
-            <option value="edit">Edit Schedule</option>
-            <option value="view">View Saved Schedule</option>
-          </select>
+      {/* Schedule Editor */}
+      <div className="border rounded-lg p-4 mb-6">
+        <h2 className="font-semibold mb-3">Edit Weekly Schedule</h2>
+        <div className="space-y-3">
+          {DAYS.map((dayName, day) => {
+            const shift = getShift(day)
+            return (
+              <div key={day} className="flex items-center gap-3">
+                <div className="w-24 font-medium">{dayName}</div>
+                <select
+                  className="border rounded px-2 py-1 flex-1"
+                  value={shift.technician_id || ""}
+                  onChange={e => updateShift(day, "technician_id", e.target.value)}
+                >
+                  <option value="">— Off —</option>
+                  {techs.filter(t => t.active).map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+                <input type="time" className="border rounded px-2 py-1" value={shift.start_time} onChange={e => updateShift(day, "start_time", e.target.value)} />
+                <span>to</span>
+                <input type="time" className="border rounded px-2 py-1" value={shift.end_time} onChange={e => updateShift(day, "end_time", e.target.value)} />
+              </div>
+            )
+          })}
         </div>
 
-        {viewMode === "edit" ? (
-          <>
-            <div className="space-y-3">
-              {DAYS.map((dayName, day) => {
-                const shift = getShift(day)
-                return (
-                  <div key={day} className="flex items-center gap-3">
-                    <div className="w-24 font-medium">{dayName}</div>
-                    <select
-                      className="border rounded px-2 py-1 flex-1"
-                      value={shift.technician_id || ""}
-                      onChange={e => updateShift(day, "technician_id", e.target.value)}
-                    >
-                      <option value="">— Off —</option>
-                      {techs.filter(t => t.active).map(t => (
-                        <option key={t.id} value={t.id}>{t.name}</option>
-                      ))}
-                    </select>
-                    <input
-                      type="time"
-                      className="border rounded px-2 py-1"
-                      value={shift.start_time}
-                      onChange={e => updateShift(day, "start_time", e.target.value)}
-                    />
-                    <span>to</span>
-                    <input
-                      type="time"
-                      className="border rounded px-2 py-1"
-                      value={shift.end_time}
-                      onChange={e => updateShift(day, "end_time", e.target.value)}
-                    />
-                  </div>
-                )
-              })}
-            </div>
+        <button
+          onClick={saveSchedule}
+          disabled={saving}
+          className="mt-4 bg-blue-600 text-white px-6 py-2 rounded font-medium disabled:opacity-50"
+        >
+          {saving ? "Saving…" : "Save Schedule"}
+        </button>
+        {message && <p className="mt-2 text-sm">{message}</p>}
+      </div>
 
-            <button
-              onClick={saveSchedule}
-              disabled={saving}
-              className="mt-4 bg-blue-600 text-white px-6 py-2 rounded font-medium disabled:opacity-50"
-            >
-              {saving ? "Saving…" : "Save Schedule"}
-            </button>
-            {message && <p className="mt-2 text-sm">{message}</p>}
-          </>
-        ) : (
+      {/* View by Employee */}
+      <div className="border rounded-lg p-4 bg-gray-50">
+        <h2 className="font-semibold mb-3">Check Employee Schedule</h2>
+        <select
+          className="border rounded px-3 py-2 mb-4 w-full"
+          value={selectedTechId}
+          onChange={e => setSelectedTechId(e.target.value)}
+        >
+          <option value="">— Select employee —</option>
+          {techs.filter(t => t.active).map(t => (
+            <option key={t.id} value={t.id}>{t.name}</option>
+          ))}
+        </select>
+
+        {selectedTechId && (
           <div className="space-y-2 text-sm">
-            {schedule.filter(s => s.technician_id).length === 0 ? (
-              <p className="text-gray-500">No schedule saved yet.</p>
+            {selectedTechSchedule.length === 0 ? (
+              <p className="text-gray-500">This employee is not scheduled any days.</p>
             ) : (
-              DAYS.map((dayName, day) => {
-                const shift = schedule.find(s => s.day_of_week === day && s.technician_id)
-                if (!shift) return null
-                const tech = techs.find(t => t.id === shift.technician_id)
+              selectedTechSchedule.map(shift => {
+                const dayName = DAYS[shift.day_of_week]
                 return (
-                  <div key={day} className="flex justify-between py-1 border-b">
+                  <div key={shift.day_of_week} className="flex justify-between py-1 border-b">
                     <span className="font-medium">{dayName}</span>
-                    <span>{tech?.name || "Unknown"} — {shift.start_time} to {shift.end_time}</span>
+                    <span>{shift.start_time} to {shift.end_time}</span>
                   </div>
                 )
               })
