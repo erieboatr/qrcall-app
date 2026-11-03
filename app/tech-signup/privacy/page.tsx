@@ -22,9 +22,11 @@ export default function PrivacyPage() {
   return (
     <div className="max-w-2xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-4">Privacy Policy</h1>
-      <div className="border rounded p-4 h-64 overflow-y-auto text-sm mb-4">
-        <p>We collect only the information needed to notify you of service calls...</p>
-        {/* Add your full privacy policy text here later */}
+      <div className="border rounded p-4 h-64 overflow-y-auto text-sm mb-4 space-y-3">
+        <p>We collect your name, phone number, and preferred language so we can send you service call alerts.</p>
+        <p>We do not sell or share your phone number with third parties for marketing.</p>
+        <p>You can request that we delete your information by contacting sales@qrcall.app.</p>
+        <p>We only send messages related to service calls you are scheduled to receive.</p>
       </div>
       <label className="flex items-center gap-2 mb-4">
         <input
