@@ -29,6 +29,7 @@ function PlantAdmin() {
   const [schedule, setSchedule] = useState<any[]>([])
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState("")
+  const [viewMode, setViewMode] = useState("edit")
 
   // New tech form
   const [newName, setNewName] = useState("")
@@ -211,71 +212,82 @@ function PlantAdmin() {
         </form>
       </div>
 
-      {/* Schedule Editor */}
+      {/* Schedule */}
       <div className="border rounded-lg p-4">
-        <h2 className="font-semibold mb-3">Weekly Schedule</h2>
-        <div className="space-y-3">
-          {DAYS.map((dayName, day) => {
-            const shift = getShift(day)
-            return (
-              <div key={day} className="flex items-center gap-3">
-                <div className="w-24 font-medium">{dayName}</div>
-                <select
-                  className="border rounded px-2 py-1 flex-1"
-                  value={shift.technician_id || ""}
-                  onChange={e => updateShift(day, "technician_id", e.target.value)}
-                >
-                  <option value="">— Off —</option>
-                  {techs.filter(t => t.active).map(t => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
-                  ))}
-                </select>
-                <input
-                  type="time"
-                  className="border rounded px-2 py-1"
-                  value={shift.start_time}
-                  onChange={e => updateShift(day, "start_time", e.target.value)}
-                />
-                <span>to</span>
-                <input
-                  type="time"
-                  className="border rounded px-2 py-1"
-                  value={shift.end_time}
-                  onChange={e => updateShift(day, "end_time", e.target.value)}
-                />
-              </div>
-            )
-          })}
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold">Weekly Schedule</h2>
+          <select
+            className="border rounded px-2 py-1 text-sm"
+            value={viewMode}
+            onChange={e => setViewMode(e.target.value)}
+          >
+            <option value="edit">Edit Schedule</option>
+            <option value="view">View Saved Schedule</option>
+          </select>
         </div>
 
-        <button
-          onClick={saveSchedule}
-          disabled={saving}
-          className="mt-4 bg-blue-600 text-white px-6 py-2 rounded font-medium disabled:opacity-50"
-        >
-          {saving ? "Saving…" : "Save Schedule"}
-        </button>
-        {message && <p className="mt-2 text-sm">{message}</p>}
-      </div>
+        {viewMode === "edit" ? (
+          <>
+            <div className="space-y-3">
+              {DAYS.map((dayName, day) => {
+                const shift = getShift(day)
+                return (
+                  <div key={day} className="flex items-center gap-3">
+                    <div className="w-24 font-medium">{dayName}</div>
+                    <select
+                      className="border rounded px-2 py-1 flex-1"
+                      value={shift.technician_id || ""}
+                      onChange={e => updateShift(day, "technician_id", e.target.value)}
+                    >
+                      <option value="">— Off —</option>
+                      {techs.filter(t => t.active).map(t => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="time"
+                      className="border rounded px-2 py-1"
+                      value={shift.start_time}
+                      onChange={e => updateShift(day, "start_time", e.target.value)}
+                    />
+                    <span>to</span>
+                    <input
+                      type="time"
+                      className="border rounded px-2 py-1"
+                      value={shift.end_time}
+                      onChange={e => updateShift(day, "end_time", e.target.value)}
+                    />
+                  </div>
+                )
+              })}
+            </div>
 
-      {/* Current Saved Schedule */}
-      <div className="mt-8 border rounded-lg p-4 bg-gray-50">
-        <h2 className="font-semibold mb-3">Current Saved Schedule</h2>
-        {schedule.filter(s => s.technician_id).length === 0 ? (
-          <p className="text-gray-500 text-sm">No schedule saved yet.</p>
+            <button
+              onClick={saveSchedule}
+              disabled={saving}
+              className="mt-4 bg-blue-600 text-white px-6 py-2 rounded font-medium disabled:opacity-50"
+            >
+              {saving ? "Saving…" : "Save Schedule"}
+            </button>
+            {message && <p className="mt-2 text-sm">{message}</p>}
+          </>
         ) : (
           <div className="space-y-2 text-sm">
-            {DAYS.map((dayName, day) => {
-              const shift = schedule.find(s => s.day_of_week === day && s.technician_id)
-              if (!shift) return null
-              const tech = techs.find(t => t.id === shift.technician_id)
-              return (
-                <div key={day} className="flex justify-between">
-                  <span className="font-medium">{dayName}</span>
-                  <span>{tech?.name || "Unknown"} — {shift.start_time} to {shift.end_time}</span>
-                </div>
-              )
-            })}
+            {schedule.filter(s => s.technician_id).length === 0 ? (
+              <p className="text-gray-500">No schedule saved yet.</p>
+            ) : (
+              DAYS.map((dayName, day) => {
+                const shift = schedule.find(s => s.day_of_week === day && s.technician_id)
+                if (!shift) return null
+                const tech = techs.find(t => t.id === shift.technician_id)
+                return (
+                  <div key={day} className="flex justify-between py-1 border-b">
+                    <span className="font-medium">{dayName}</span>
+                    <span>{tech?.name || "Unknown"} — {shift.start_time} to {shift.end_time}</span>
+                  </div>
+                )
+              })
+            )}
           </div>
         )}
       </div>
