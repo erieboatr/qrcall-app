@@ -143,6 +143,11 @@ function SignupForm() {
           {loading ? "Submitting…" : "SUBSCRIBE"}
         </button>
       </form>
+
+      <p className="mt-8 text-xs text-gray-500 text-center">
+        QRcall.app<br />
+        1269 Highbridge Road, Vermilion Ohio 44089
+      </p>
     </div>
   )
 }
