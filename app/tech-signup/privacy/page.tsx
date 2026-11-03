@@ -23,10 +23,10 @@ export default function PrivacyPage() {
     <div className="max-w-2xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-4">Privacy Policy</h1>
       <div className="border rounded p-4 h-64 overflow-y-auto text-sm mb-4 space-y-3">
-        <p>We collect your name, phone number, and preferred language so we can send you service call alerts.</p>
-        <p>We do not sell or share your phone number with third parties for marketing.</p>
-        <p>You can request that we delete your information by contacting sales@qrcall.app.</p>
-        <p>We only send messages related to service calls you are scheduled to receive.</p>
+        <p>QRcall.app collects your name, phone number, and preferred language so QRcall.app can send you service call alerts.</p>
+        <p>QRcall.app does not sell or share your phone number with third parties for marketing.</p>
+        <p>You can request that QRcall.app delete your information by contacting sales@qrcall.app.</p>
+        <p>QRcall.app only sends messages related to service calls you are scheduled to receive.</p>
       </div>
       <label className="flex items-center gap-2 mb-4">
         <input
@@ -43,6 +43,10 @@ export default function PrivacyPage() {
       >
         Continue
       </button>
+      <p className="mt-8 text-xs text-gray-500 text-center">
+        QRcall.app<br />
+        1269 Highbridge Road, Vermilion Ohio 44089
+      </p>
     </div>
   )
 }

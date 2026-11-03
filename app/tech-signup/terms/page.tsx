@@ -22,7 +22,7 @@ export default function TermsPage() {
         <p>2. You must provide accurate contact information.</p>
         <p>3. You can stop receiving messages at any time by replying STOP.</p>
         <p>4. QRcall.app is not responsible for missed messages due to carrier issues or incorrect phone numbers.</p>
-        <p>5. We may update these terms. Continued use means you accept the changes.</p>
+        <p>5. QRcall.app may update these terms. Continued use means you accept the changes.</p>
       </div>
       <label className="flex items-center gap-2 mb-4">
         <input
@@ -39,6 +39,10 @@ export default function TermsPage() {
       >
         Continue
       </button>
+      <p className="mt-8 text-xs text-gray-500 text-center">
+        QRcall.app<br />
+        1269 Highbridge Road, Vermilion Ohio 44089
+      </p>
     </div>
   )
 }
