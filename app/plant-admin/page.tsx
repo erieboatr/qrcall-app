@@ -113,6 +113,7 @@ function PlantAdmin() {
     const { error } = await supabase.from("schedules").insert(rows)
     setSaving(false)
     setMessage(error ? error.message : "Schedule saved")
+    if (!error) load()
   }
 
   async function addTech(e: React.FormEvent) {
@@ -210,7 +211,7 @@ function PlantAdmin() {
         </form>
       </div>
 
-      {/* Schedule */}
+      {/* Schedule Editor */}
       <div className="border rounded-lg p-4">
         <h2 className="font-semibold mb-3">Weekly Schedule</h2>
         <div className="space-y-3">
@@ -255,6 +256,28 @@ function PlantAdmin() {
           {saving ? "Saving…" : "Save Schedule"}
         </button>
         {message && <p className="mt-2 text-sm">{message}</p>}
+      </div>
+
+      {/* Current Saved Schedule */}
+      <div className="mt-8 border rounded-lg p-4 bg-gray-50">
+        <h2 className="font-semibold mb-3">Current Saved Schedule</h2>
+        {schedule.filter(s => s.technician_id).length === 0 ? (
+          <p className="text-gray-500 text-sm">No schedule saved yet.</p>
+        ) : (
+          <div className="space-y-2 text-sm">
+            {DAYS.map((dayName, day) => {
+              const shift = schedule.find(s => s.day_of_week === day && s.technician_id)
+              if (!shift) return null
+              const tech = techs.find(t => t.id === shift.technician_id)
+              return (
+                <div key={day} className="flex justify-between">
+                  <span className="font-medium">{dayName}</span>
+                  <span>{tech?.name || "Unknown"} — {shift.start_time} to {shift.end_time}</span>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )
