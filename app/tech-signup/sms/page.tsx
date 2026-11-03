@@ -1,7 +1,7 @@
 "use client"
 
 import { Suspense, useState, useEffect } from "react"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 import { createClient } from "@supabase/supabase-js"
 
 const supabase = createClient(
@@ -11,6 +11,7 @@ const supabase = createClient(
 
 function SignupForm() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const plantId = searchParams.get("plant") || "QRcall"
 
   const [plantName, setPlantName] = useState("QRcall")
@@ -24,7 +25,12 @@ function SignupForm() {
   const [error, setError] = useState("")
 
   useEffect(() => {
-    if (!plantId) return
+    if (localStorage.getItem("signup_terms") !== "true" || localStorage.getItem("signup_privacy") !== "true") {
+      router.push("/tech-signup/terms")
+    }
+  }, [router])
+
+  useEffect(() => {
     supabase
       .from("plants")
       .select("name, logo_url")
@@ -36,12 +42,6 @@ function SignupForm() {
       })
   }, [plantId])
 
-  useEffect(() => {
-    if (localStorage.getItem("signup_terms") !== "true" || localStorage.getItem("signup_privacy") !== "true") {
-      window.location.href = "/tech-signup/terms"
-    }
-  }, [])
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!consent) {
@@ -51,142 +51,103 @@ function SignupForm() {
     setLoading(true)
     setError("")
 
-    const { error } = await supabase.from("technicians").insert({
+    const { error: insertError } = await supabase.from("technicians").insert({
       name,
       phone,
       language,
-      plant_id: plantId || null,
+      plant_id: plantId,
       active: true,
-      privacy_accepted: true,
+      sms_consent: true,
     })
 
-    if (error) {
-      setLoading(false)
-      setError(error.message)
-      return
-    }
-
-    try {
-      await fetch("https://slrxmogriwsnbondquwq.supabase.co/functions/v1/send-optin-confirm", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({ phone, plantName }),
-      })
-    } catch (err) {
-      console.error("Opt-in text failed:", err)
-    }
-
     setLoading(false)
-    setDone(true)
+    if (insertError) {
+      setError(insertError.message)
+    } else {
+      localStorage.removeItem("signup_terms")
+      localStorage.removeItem("signup_privacy")
+      setDone(true)
+    }
   }
 
   if (done) {
     return (
       <div className="max-w-md mx-auto p-6 text-center">
-        <img src={logoUrl} alt="logo" className="h-14 mx-auto mb-4" />
-        <h1 className="text-2xl font-bold mb-2">You’re signed up</h1>
-        <p>You will now receive service-call alerts from {plantName}.</p>
-        <p className="mt-2 text-sm text-gray-600">Reply STOP at any time to opt out.</p>
+        <h1 className="text-2xl font-bold mb-4">You’re signed up</h1>
+        <p>You will now receive service call alerts for {plantName}.</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-xl shadow p-6">
-        <img src={logoUrl} alt="logo" className="h-12 mb-4" />
-        <h1 className="text-2xl font-bold mb-1">Join {plantName} Alerts</h1>
-        <p className="text-gray-600 mb-6">
-          Receive service-call alerts when equipment needs attention. Only on-duty technicians are notified.
-        </p>
+    <div className="max-w-md mx-auto p-6">
+      <img src={logoUrl} alt="logo" className="h-12 mb-4" />
+      <h1 className="text-2xl font-bold mb-1">Technician Sign-Up</h1>
+      <p className="text-sm text-gray-600 mb-6">{plantName}</p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Your Name</label>
-            <input
-              required
-              className="w-full border rounded-lg px-3 py-2"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Mobile Number</label>
-            <input
-              required
-              type="tel"
-              placeholder="(555) 555-5555"
-              className="w-full border rounded-lg px-3 py-2"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Language</label>
-            <select
-              className="w-full border rounded-lg px-3 py-2"
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-            >
-              <option value="en">English</option>
-              <option value="es">Spanish</option>
-            </select>
-          </div>
-
-          <div className="border rounded-lg p-4 bg-gray-50">
-            <h3 className="font-semibold mb-2">Communication Preferences</h3>
-            <p className="text-sm text-gray-600 mb-3">How and why do you prefer we contact you.</p>
-
-            <div className="flex items-start gap-2">
-              <input
-                type="checkbox"
-                id="sms-consent"
-                required
-                checked={consent}
-                onChange={(e) => setConsent(e.target.checked)}
-                className="mt-1"
-              />
-              <label htmlFor="sms-consent" className="text-sm text-gray-700">
-                <span className="font-medium">Service Communications</span><br />
-                By checking this box, you agree to receive service communications via SMS notifications from <strong>QRcall</strong>.
-                <ul className="list-disc ml-5 mt-1">
-                  <li>These messages may include important information about equipment service calls.</li>
-                  <li>Message frequency may vary.</li>
-                  <li>Message and data rates may apply.</li>
-                  <li>Your mobile phone number will not be sold or shared with third parties for promotional or marketing purposes.</li>
-                  <li>Reply STOP to opt out. Reply HELP for help.</li>
-                </ul>
-              </label>
-            </div>
-          </div>
-
-          {error && <p className="text-red-600 text-sm">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold disabled:opacity-50"
-          >
-            {loading ? "Submitting…" : "SUBSCRIBE"}
-          </button>
-        </form>
-
-        <div className="mt-4 text-center text-sm">
-          <a href="/tech-signup/privacy" className="text-red-600 hover:underline">Privacy Policy</a>
-          <span className="mx-2 text-gray-400">|</span>
-          <a href="/tech-signup/terms" className="text-red-600 hover:underline">Terms and Conditions</a>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium">Name</label>
+          <input
+            required
+            className="w-full border rounded p-2"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
         </div>
-      </div>
+        <div>
+          <label className="block text-sm font-medium">Phone</label>
+          <input
+            required
+            type="tel"
+            className="w-full border rounded p-2"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="2165551234"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium">Language</label>
+          <select
+            className="w-full border rounded p-2"
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+          >
+            <option value="en">English</option>
+            <option value="es">Español</option>
+          </select>
+        </div>
+
+        <div className="flex items-start gap-2">
+          <input
+            type="checkbox"
+            required
+            checked={consent}
+            onChange={(e) => setConsent(e.target.checked)}
+            className="mt-1"
+          />
+          <label className="text-sm text-gray-700">
+            By checking this box and submitting this form, you consent to receive transactional text messages for repair and diagnostics alerts from QRcall.app.
+            Reply STOP to opt out. Reply HELP for help.
+            Standard message and data rates may apply. Message frequency may vary.
+          </label>
+        </div>
+
+        {error && <p className="text-red-600 text-sm">{error}</p>}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold disabled:opacity-50"
+        >
+          {loading ? "Submitting…" : "SUBSCRIBE"}
+        </button>
+      </form>
     </div>
   )
 }
 
-export default function SmsStep() {
+export default function TechSignupPage() {
   return (
     <Suspense fallback={<div className="p-6 text-center">Loading…</div>}>
       <SignupForm />
