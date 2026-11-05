@@ -1,11 +1,14 @@
-"use client"
+'use client'
 
-import { useEffect } from "react"
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function TechSignupRedirect() {
-  useEffect(() => {
-    window.location.href = "/tech-signup/terms"
-  }, [])
+  const router = useRouter()
 
-  return <div className="p-6 text-center">Redirecting…</div>
+  useEffect(() => {
+    router.replace('/tech-signup/terms')
+  }, [router])
+
+  return <div className="p-6 text-center">Loading…</div>
 }

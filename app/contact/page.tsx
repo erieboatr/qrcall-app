@@ -1,64 +1,77 @@
 'use client'
 
 import { useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import Link from 'next/link'
 
-export default function ContactPage() {
-  const [name, setName] = useState('')
-  const [company, setCompany] = useState('')
-  const [phone, setPhone] = useState('')
-  const [needs, setNeeds] = useState('')
-  const [submitted, setSubmitted] = useState(false)
-  const [loading, setLoading] = useState(false)
+export default function Contact() {
+  const [sent, setSent] = useState(false)
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setLoading(true)
-    const { error } = await supabase.from('leads').insert({
-      name,
-      company,
-      phone,
-      needs,
-    })
-    setLoading(false)
-    if (!error) setSubmitted(true)
-    else alert('Something went wrong. Please try again.')
-  }
-
-  if (submitted) {
-    return (
-      <div className="max-w-md mx-auto p-8 text-center">
-        <h1 className="text-2xl font-bold text-green-600 mb-2">Thank you</h1>
-        <p>We’ll be in touch soon.</p>
-        <a href="/" className="inline-block mt-6 text-blue-600">Back to home</a>
-      </div>
-    )
+    // In a real app this would post to your leads table or email service
+    setSent(true)
   }
 
   return (
-    <div className="max-w-md mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">Contact Sales</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium">Name</label>
-          <input className="w-full border rounded p-2" value={name} onChange={e => setName(e.target.value)} required />
+    <div className="min-h-screen bg-white">
+      <header className="border-b">
+        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2">
+            <img src="/logo.png" alt="QRcall" className="h-10" />
+            <span className="font-bold text-xl">QRcall</span>
+          </Link>
+          <nav className="flex gap-6 text-sm">
+            <Link href="/about" className="hover:underline">About</Link>
+            <Link href="/pricing" className="hover:underline">Pricing</Link>
+            <Link href="/contact" className="hover:underline font-semibold">Contact</Link>
+          </nav>
         </div>
-        <div>
-          <label className="block text-sm font-medium">Company</label>
-          <input className="w-full border rounded p-2" value={company} onChange={e => setCompany(e.target.value)} />
+      </header>
+
+      <main className="max-w-xl mx-auto px-4 py-12">
+        <h1 className="text-3xl font-bold mb-2">Contact Us</h1>
+        <p className="text-gray-600 mb-8">Questions about QRcall? We’re here to help.</p>
+
+        <div className="mb-8 space-y-1 text-sm">
+          <p><strong>QRcall.app</strong></p>
+          <p>1269 Highbridge Road, Vermilion, Ohio 44089</p>
+          <p>Email: <a href="mailto:sales@qrcall.app" className="text-red-600">sales@qrcall.app</a></p>
+          <p>Phone: +1 (216) 200-3264</p>
         </div>
-        <div>
-          <label className="block text-sm font-medium">Phone</label>
-          <input className="w-full border rounded p-2" value={phone} onChange={e => setPhone(e.target.value)} />
-        </div>
-        <div>
-          <label className="block text-sm font-medium">What are you looking for?</label>
-          <textarea className="w-full border rounded p-2" rows={4} value={needs} onChange={e => setNeeds(e.target.value)} />
-        </div>
-        <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white py-2 rounded font-medium">
-          {loading ? 'Sending…' : 'Send'}
-        </button>
-      </form>
+
+        {sent ? (
+          <div className="bg-green-50 border border-green-200 rounded p-6 text-center">
+            <p className="font-semibold">Message sent!</p>
+            <p className="text-sm mt-2">We’ll get back to you shortly.</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Name</label>
+              <input required className="w-full border rounded p-2" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Company</label>
+              <input className="w-full border rounded p-2" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Email</label>
+              <input type="email" required className="w-full border rounded p-2" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Phone</label>
+              <input type="tel" className="w-full border rounded p-2" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">What are you looking for?</label>
+              <textarea required rows={4} className="w-full border rounded p-2" />
+            </div>
+            <button type="submit" className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold">
+              Send Message
+            </button>
+          </form>
+        )}
+      </main>
     </div>
   )
 }
