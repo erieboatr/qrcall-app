@@ -79,7 +79,7 @@ export default function Home() {
             <Link href="/tech-signup/privacy">Privacy Policy</Link>
             <Link href="/tech-signup/terms">Terms of Service</Link>
           </div>
-          <p>&copy; {new Date().getFullYear()} QRcall.app. All rights reserved.</p>
+          <p>&copy; 2026 QRcall.app. All rights reserved.</p>
         </div>
       </footer>
     </div>
