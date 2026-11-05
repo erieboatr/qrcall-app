@@ -7,8 +7,12 @@ export default function TechSignupRedirect() {
   const router = useRouter()
 
   useEffect(() => {
-    router.replace('/tech-signup/terms')
+    router.replace('/tech-signup/sms')
   }, [router])
 
-  return <div className="p-6 text-center">Loading…</div>
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <p className="text-gray-600">Loading opt-in form…</p>
+    </div>
+  )
 }

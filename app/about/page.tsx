@@ -36,6 +36,18 @@ export default function About() {
           +1 (216) 200-3264
         </p>
       </main>
+      <footer className="border-t mt-12 py-6 text-center text-sm text-gray-600">
+  <div className="space-x-4">
+    <a href="/tech-signup/terms" className="text-red-700 underline font-medium hover:text-red-900">
+      Terms and Conditions
+    </a>
+    <span className="text-gray-400">|</span>
+    <a href="/tech-signup/privacy" className="text-red-700 underline font-medium hover:text-red-900">
+      Privacy Policy
+    </a>
+  </div>
+  <p className="mt-2">&copy; 2026 QRcall.app. All rights reserved.</p>
+</footer>
     </div>
   )
 }
