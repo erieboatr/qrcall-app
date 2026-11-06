@@ -21,7 +21,7 @@ export default function PrivacyPage() {
 
         <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
           <h2 className="font-semibold text-lg mb-2">SMS / Text Message Program</h2>
-          <p className="text-sm text-gray-700 leading-relaxed">
+          <p className="text-sm text-gray-700 leading-relaxed font-bold">
             By providing your mobile phone number and enrolling in the program, you agree to receive recurring repair and diagnostics alert text messages from QRcall.app. Message frequency varies. Message and data rates may apply. Reply STOP to cancel or HELP for help. For additional assistance, contact sales@qrcall.app. Wireless carriers are not liable for delayed or undelivered messages. Participation in this program is subject to our Privacy Policy.
           </p>
         </div>
