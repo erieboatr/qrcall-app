@@ -36,7 +36,7 @@ function PrivacyContent() {
         </div>
 
         <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
-          <div className="prose prose-sm text-gray-700 space-y-4">
+          <div className="prose prose-sm text-gray-700 space-y-4 font-bold">
             <p>QRcall.app ("we", "us", or "our") respects your privacy. This Privacy Policy explains how we collect, use, and protect your information.</p>
             
             <h2 className="font-semibold text-base">Information We Collect</h2>
