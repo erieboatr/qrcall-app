@@ -45,26 +45,21 @@ function PrivacyContent() {
         </div>
 
         <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
-          <h2 className="font-semibold text-lg mb-2">SMS / Text Message Program</h2>
-          <p className="text-sm text-gray-700 leading-relaxed font-bold">
-            By providing your mobile phone number and enrolling in the program, you agree to receive recurring repair and diagnostics alert text messages from QRcall.app. Message frequency varies. Message and data rates may apply. Reply STOP to cancel or HELP for help. For additional assistance, contact sales@qrcall.app. Wireless carriers are not liable for delayed or undelivered messages. Participation in this program is subject to our Privacy Policy.
-          </p>
-        </div>
+          <div className="prose prose-sm text-gray-700 space-y-4">
+            <p>QRcall.app ("we", "us", or "our") respects your privacy. This Privacy Policy explains how we collect, use, and protect your information.</p>
+            
+            <h2 className="font-semibold text-base">Information We Collect</h2>
+            <p>When you sign up for SMS alerts we collect your name, mobile phone number, and preferred language. We also collect plant/company information you provide.</p>
 
-        <div className="prose prose-sm text-gray-700 space-y-4">
-          <p>QRcall.app ("we", "us", or "our") respects your privacy. This Privacy Policy explains how we collect, use, and protect your information.</p>
-          
-          <h2 className="font-semibold text-base">Information We Collect</h2>
-          <p>When you sign up for SMS alerts we collect your name, mobile phone number, and preferred language. We also collect plant/company information you provide.</p>
+            <h2 className="font-semibold text-base">How We Use Your Information</h2>
+            <p>We use your information solely to send service call alerts and related transactional messages. We do not sell or share your mobile number with third parties for marketing purposes.</p>
 
-          <h2 className="font-semibold text-base">How We Use Your Information</h2>
-          <p>We use your information solely to send service call alerts and related transactional messages. We do not sell or share your mobile number with third parties for marketing purposes.</p>
+            <h2 className="font-semibold text-base">Your Rights</h2>
+            <p>You may opt out of messages at any time by replying STOP. You can also contact us at sales@qrcall.app to request deletion of your information.</p>
 
-          <h2 className="font-semibold text-base">Your Rights</h2>
-          <p>You may opt out of messages at any time by replying STOP. You can also contact us at sales@qrcall.app to request deletion of your information.</p>
-
-          <h2 className="font-semibold text-base">Contact</h2>
-          <p>Questions about this policy can be sent to sales@qrcall.app.</p>
+            <h2 className="font-semibold text-base">Contact</h2>
+            <p>Questions about this policy can be sent to sales@qrcall.app.</p>
+          </div>
         </div>
 
         <div className="mt-8 flex items-start gap-2">
