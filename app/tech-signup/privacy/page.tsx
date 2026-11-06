@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense, useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -10,10 +10,8 @@ const supabase = createClient(
 )
 
 function PrivacyContent() {
-  const [agreed, setAgreed] = useState(false)
   const [logoUrl, setLogoUrl] = useState('/logo.png')
   const [plantName, setPlantName] = useState('QRcall')
-  const router = useRouter()
   const searchParams = useSearchParams()
   const plantId = searchParams.get('plant') || 'QRcall'
 
@@ -28,13 +26,6 @@ function PrivacyContent() {
         if (data?.logo_url) setLogoUrl(data.logo_url)
       })
   }, [plantId])
-
-  function handleContinue() {
-    if (agreed) {
-      localStorage.setItem('signup_privacy', 'true')
-      router.push(`/tech-signup/sms?plant=${plantId}`)
-    }
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4">
@@ -62,26 +53,9 @@ function PrivacyContent() {
           </div>
         </div>
 
-        <div className="mt-8 flex items-start gap-2">
-          <input
-            type="checkbox"
-            id="agree"
-            checked={agreed}
-            onChange={(e) => setAgreed(e.target.checked)}
-            className="mt-1"
-          />
-          <label htmlFor="agree" className="text-sm text-gray-700">
-            I have read and agree to the Privacy Policy
-          </label>
-        </div>
-
-        <button
-          onClick={handleContinue}
-          disabled={!agreed}
-          className="mt-6 w-full bg-red-600 text-white py-3 rounded-lg font-semibold disabled:opacity-50"
-        >
-          Continue
-        </button>
+        <p className="text-sm text-gray-600 mt-8 text-center">
+          Continued use of this website constitutes your acceptance of this Privacy Policy.
+        </p>
 
         <footer className="border-t mt-12 py-6 text-center text-sm text-gray-600">
           <div className="space-x-4">
