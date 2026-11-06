@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 
@@ -9,7 +9,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-export default function PrivacyPage() {
+function PrivacyContent() {
   const [agreed, setAgreed] = useState(false)
   const [logoUrl, setLogoUrl] = useState('/logo.png')
   const [plantName, setPlantName] = useState('QRcall')
@@ -86,5 +86,13 @@ export default function PrivacyPage() {
         </footer>
       </div>
     </div>
+  )
+}
+
+export default function PrivacyPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading…</div>}>
+      <PrivacyContent />
+    </Suspense>
   )
 }
