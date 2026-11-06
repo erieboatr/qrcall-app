@@ -1,66 +1,98 @@
-
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { createClient } from '@supabase/supabase-js'
 
-export default function TermsPage() {
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
+function TermsContent() {
   const [agreed, setAgreed] = useState(false)
+  const [logoUrl, setLogoUrl] = useState('/logo.png')
+  const [plantName, setPlantName] = useState('QRcall')
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const plantId = searchParams.get('plant') || 'QRcall'
+
+  useEffect(() => {
+    supabase
+      .from('plants')
+      .select('name, logo_url')
+      .eq('id', plantId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.name) setPlantName(data.name)
+        if (data?.logo_url) setLogoUrl(data.logo_url)
+      })
+  }, [plantId])
 
   function handleContinue() {
     if (agreed) {
       localStorage.setItem('signup_terms', 'true')
-      router.push('/tech-signup/privacy')
+      router.push(`/tech-signup/privacy?plant=${plantId}`)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white max-w-lg w-full rounded-lg shadow p-6">
-        <h1 className="text-2xl font-bold mb-4">Terms of Service</h1>
-        <div className="border rounded p-4 h-72 overflow-y-auto text-sm mb-4 space-y-3">
-          <p><strong>QRcall.app Service Call Alerts</strong></p>
-          <p>
-            By providing your mobile phone number and enrolling in the program, you agree to receive recurring Service Call text messages from QRcall.app. Message frequency varies. Message and data rates may apply. Reply <strong>STOP</strong> to cancel or <strong>HELP</strong> for help. For additional assistance, contact sales@qrcall.app or +1 (216) 200-3264. Wireless carriers are not liable for delayed or undelivered messages. Participation in this program is subject to our <a href="/tech-signup/privacy" className="underline">Privacy Policy</a>.
-          </p>
-          <p>1. QRcall.app sends transactional SMS alerts about equipment service calls to technicians who have opted in and are scheduled on duty.</p>
-          <p>2. You must provide accurate contact information.</p>
-          <p>3. Message frequency varies based on service call volume at your plant.</p>
-          <p>4. Message and data rates may apply.</p>
-          <p>5. Reply <strong>STOP</strong> to unsubscribe. Reply <strong>HELP</strong> for help.</p>
-          <p>6. Carriers are not liable for any delayed or undelivered messages.</p>
-          <p>7. Continued use of the service constitutes acceptance of these terms.</p>
+    <div className="min-h-screen bg-gray-50 py-10 px-4">
+      <div className="max-w-2xl mx-auto bg-white rounded-xl shadow p-6">
+        <div className="text-center mb-6">
+          <img src={logoUrl} alt={`${plantName} logo`} className="h-16 mx-auto" />
+          <h1 className="text-2xl font-bold mt-4">Terms of Service</h1>
         </div>
-        <div className="flex items-start gap-2 mb-4">
+
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
+          <h2 className="font-semibold text-lg mb-2">QRcall.app Service Call Alerts</h2>
+          <p className="text-sm text-gray-700 leading-relaxed font-bold">
+            By providing your mobile phone number and enrolling in the program, you agree to receive recurring Service Call text messages from QRcall.app. Message frequency varies. Message and data rates may apply. Reply STOP to cancel or HELP for help. For additional assistance, contact sales@qrcall.app or +1 (216) 200-3264. Wireless carriers are not liable for delayed or undelivered messages. Participation in this program is subject to our Privacy Policy.
+          </p>
+        </div>
+
+        <div className="mt-8 flex items-start gap-2">
           <input
             type="checkbox"
+            id="agree"
             checked={agreed}
             onChange={(e) => setAgreed(e.target.checked)}
             className="mt-1"
           />
-          <label className="text-sm">I have read and agree to the Terms of Service</label>
+          <label htmlFor="agree" className="text-sm text-gray-700">
+            I have read and agree to the Terms of Service
+          </label>
         </div>
+
         <button
           onClick={handleContinue}
           disabled={!agreed}
-          className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold disabled:opacity-50"
+          className="mt-6 w-full bg-red-600 text-white py-3 rounded-lg font-semibold disabled:opacity-50"
         >
           Continue
         </button>
+
+        <footer className="border-t mt-12 py-6 text-center text-sm text-gray-600">
+          <div className="space-x-4">
+            <a href="/tech-signup/terms" className="text-red-700 underline font-medium hover:text-red-900">
+              Terms and Conditions
+            </a>
+            <span className="text-gray-400">|</span>
+            <a href="/tech-signup/privacy" className="text-red-700 underline font-medium hover:text-red-900">
+              Privacy Policy
+            </a>
+          </div>
+          <p className="mt-2">&copy; 2026 QRcall.app. All rights reserved.</p>
+        </footer>
       </div>
-      <footer className="border-t mt-12 py-6 text-center text-sm text-gray-600">
-  <div className="space-x-4">
-    <a href="/tech-signup/terms" className="text-red-700 underline font-medium hover:text-red-900">
-      Terms and Conditions
-    </a>
-    <span className="text-gray-400">|</span>
-    <a href="/tech-signup/privacy" className="text-red-700 underline font-medium hover:text-red-900">
-      Privacy Policy
-    </a>
-  </div>
-  <p className="mt-2">&copy; 2026 QRcall.app. All rights reserved.</p>
-</footer>
     </div>
+  )
+}
+
+export default function TermsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading…</div>}>
+      <TermsContent />
+    </Suspense>
   )
 }
