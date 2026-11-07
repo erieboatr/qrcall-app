@@ -68,7 +68,9 @@ function SignupForm() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-xl shadow p-8 max-w-md text-center">
-          <img src={logoUrl} alt="logo" className="h-16 mx-auto mb-4" />
+          <a href="/">
+            <img src={logoUrl} alt="logo" className="h-16 mx-auto mb-4" />
+          </a>
           <h1 className="text-2xl font-bold mb-2 text-gray-900">You’re Signed Up</h1>
           <p className="text-gray-700">You will now receive service call alerts when you are on duty.</p>
         </div>
@@ -80,7 +82,9 @@ function SignupForm() {
     <div className="min-h-screen bg-gray-50 py-10 px-4">
       <div className="max-w-md mx-auto bg-white rounded-xl shadow p-6">
         <div className="text-center mb-6">
-          <img src={logoUrl} alt={`${plantName} logo`} className="h-16 mx-auto" />
+          <a href="/">
+            <img src={logoUrl} alt={`${plantName} logo`} className="h-16 mx-auto" />
+          </a>
           <h1 className="text-2xl font-bold mt-4 text-gray-900">Join QRcall Alerts</h1>
           <p className="text-gray-700 text-sm mt-1">
             Receive service-call alerts when equipment needs attention. Only on-duty technicians are notified.

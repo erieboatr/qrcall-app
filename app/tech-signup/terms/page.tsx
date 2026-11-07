@@ -31,18 +31,20 @@ function TermsContent() {
     <div className="min-h-screen bg-gray-50 py-10 px-4">
       <div className="max-w-2xl mx-auto bg-white rounded-xl shadow p-6">
         <div className="text-center mb-6">
-          <img src={logoUrl} alt={`${plantName} logo`} className="h-16 mx-auto" />
-          <h1 className="text-2xl font-bold mt-4">Terms of Service</h1>
+          <a href="/">
+            <img src={logoUrl} alt={`${plantName} logo`} className="h-16 mx-auto" />
+          </a>
+          <h1 className="text-2xl font-bold mt-4 text-gray-900">Terms of Service</h1>
         </div>
 
         <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
-          <h2 className="font-semibold text-lg mb-2">QRcall.app Service Call Alerts</h2>
-          <p className="text-sm text-gray-700 leading-relaxed font-bold">
+          <h2 className="font-semibold text-lg mb-2 text-gray-900">QRcall.app Service Call Alerts</h2>
+          <p className="text-sm text-gray-900 leading-relaxed font-bold">
             By providing your mobile phone number and enrolling in the program, you agree to receive recurring Service Call text messages from QRcall.app. Message frequency varies. Message and data rates may apply. Reply STOP to cancel or HELP for help. For additional assistance, contact sales@qrcall.app or +1 (216) 200-3264. Wireless carriers are not liable for delayed or undelivered messages. Participation in this program is subject to our Privacy Policy.
           </p>
         </div>
 
-        <p className="text-sm text-gray-600 mt-8 text-center">
+        <p className="text-sm text-gray-700 mt-8 text-center">
           Continued use of this website constitutes your acceptance of these Terms of Service.
         </p>
 

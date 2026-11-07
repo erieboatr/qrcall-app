@@ -31,12 +31,14 @@ function PrivacyContent() {
     <div className="min-h-screen bg-gray-50 py-10 px-4">
       <div className="max-w-2xl mx-auto bg-white rounded-xl shadow p-6">
         <div className="text-center mb-6">
-          <img src={logoUrl} alt={`${plantName} logo`} className="h-16 mx-auto" />
-          <h1 className="text-2xl font-bold mt-4">Privacy Policy</h1>
+          <a href="/">
+            <img src={logoUrl} alt={`${plantName} logo`} className="h-16 mx-auto" />
+          </a>
+          <h1 className="text-2xl font-bold mt-4 text-gray-900">Privacy Policy</h1>
         </div>
 
         <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
-          <div className="prose prose-sm text-gray-700 space-y-4 font-bold">
+          <div className="prose prose-sm text-gray-900 space-y-4 font-bold">
             <p>QRcall.app ("we", "us", or "our") respects your privacy. This Privacy Policy explains how we collect, use, and protect your information.</p>
             
             <h2 className="font-semibold text-base">Information We Collect</h2>
@@ -53,7 +55,7 @@ function PrivacyContent() {
           </div>
         </div>
 
-        <p className="text-sm text-gray-600 mt-8 text-center">
+        <p className="text-sm text-gray-700 mt-8 text-center">
           Continued use of this website constitutes your acceptance of this Privacy Policy.
         </p>
 
