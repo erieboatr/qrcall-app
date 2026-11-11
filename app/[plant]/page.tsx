@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 
-export default function PlantHomePage() {
+function PlantHomeContent() {
   const params = useParams()
   const plantId = params.plant as string
 
@@ -64,5 +64,13 @@ export default function PlantHomePage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function PlantHomePage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center">Loading…</div>}>
+      <PlantHomeContent />
+    </Suspense>
   )
 }
