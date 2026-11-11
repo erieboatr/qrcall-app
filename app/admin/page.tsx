@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
 const ADMIN_PASSWORD = 'MyPlant2026' // change to your password
@@ -8,13 +9,17 @@ const ADMIN_PASSWORD = 'MyPlant2026' // change to your password
 type Tech = { id: string; name: string; phone: string }
 
 export default function AdminPage() {
+  const searchParams = useSearchParams()
+  const plantParam = searchParams.get('plant') || ''
+
   const [authed, setAuthed] = useState(false)
   const [password, setPassword] = useState('')
+  const [logoUrl, setLogoUrl] = useState('/logo.png')
   const [techName, setTechName] = useState('')
   const [techPhone, setTechPhone] = useState('')
   const [equipName, setEquipName] = useState('')
   const [equipLoc, setEquipLoc] = useState('')
-  const [plant, setPlant] = useState('ppi')
+  const [plant, setPlant] = useState(plantParam || 'ppi')
   const [techId, setTechId] = useState('')
   const [day, setDay] = useState(1)
   const [start, setStart] = useState('06:00:00')
@@ -28,6 +33,19 @@ export default function AdminPage() {
   const [plantState, setPlantState] = useState('')
   const [plantPoc, setPlantPoc] = useState('')
   const [plantPhone, setPlantPhone] = useState('')
+
+  useEffect(() => {
+    if (plantParam) {
+      supabase
+        .from('plants')
+        .select('logo_url')
+        .eq('id', plantParam)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data?.logo_url) setLogoUrl(data.logo_url)
+        })
+    }
+  }, [plantParam])
 
   useEffect(() => {
     if (authed) loadTechs()
@@ -102,8 +120,9 @@ export default function AdminPage() {
   if (!authed) {
     return (
       <div className="max-w-sm mx-auto p-8">
-        <img src="/logo.png" alt="Qrcall" className="h-12 mx-auto mb-4" />
-        <h1 className="text-xl font-bold mb-4">Admin Login</h1>
+        <img src={logoUrl} alt="Logo" className="h-16 mx-auto mb-4" />
+        <h1 className="text-xl font-bold mb-4 text-center">Admin Login</h1>
+        {plantParam && <p className="text-center text-sm text-gray-600 mb-2">Plant: {plantParam}</p>}
         <form onSubmit={checkPassword} className="space-y-3">
           <input type="password" className="w-full border p-2" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
           <button className="w-full bg-blue-600 text-white py-2 rounded">Enter</button>
@@ -115,8 +134,8 @@ export default function AdminPage() {
 
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-8">
-      <img src="/logo.png" alt="Qrcall" className="h-12 mb-2" />
-      <h1 className="text-2xl font-bold">Admin</h1>
+      <img src={logoUrl} alt="Logo" className="h-12 mb-2" />
+      <h1 className="text-2xl font-bold">Admin {plantParam && `— ${plantParam}`}</h1>
       {message && <p className="text-sm text-green-600">{message}</p>}
 
       <form onSubmit={addPlant} className="space-y-2 border p-4 rounded">
