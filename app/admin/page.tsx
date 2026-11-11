@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
@@ -8,7 +8,7 @@ const ADMIN_PASSWORD = 'MyPlant2026' // change to your password
 
 type Tech = { id: string; name: string; phone: string }
 
-export default function AdminPage() {
+function AdminContent() {
   const searchParams = useSearchParams()
   const plantParam = searchParams.get('plant') || ''
 
@@ -192,5 +192,13 @@ export default function AdminPage() {
         <button className="bg-blue-600 text-white px-4 py-2 rounded">Add Schedule</button>
       </form>
     </div>
+  )
+}
+
+export default function AdminPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-center">Loading...</div>}>
+      <AdminContent />
+    </Suspense>
   )
 }
