@@ -46,14 +46,19 @@ function SignupForm() {
 
     setLoading(true)
 
-    const { error: insertError } = await supabase.from('technicians').insert({
+    const { error: insertError } = await supabase
+  .from('technicians')
+  .upsert(
+    {
       name,
       phone,
       language,
       plant_id: plantId,
       active: true,
       sms_consent: true,
-    })
+    },
+    { onConflict: 'phone' }   // uses the phone column as the unique key
+  )
 
     if (insertError) {
       setLoading(false)
