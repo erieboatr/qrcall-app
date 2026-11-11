@@ -63,6 +63,26 @@ function PlantHomeContent() {
           {plant.phone && <p>{plant.phone}</p>}
         </div>
       )}
+
+      <div className="mt-12 text-center text-sm space-y-2">
+        <div>
+          <Link
+            href={`/tech-signup?plant=${plantId}`}
+            className="text-blue-600 hover:underline font-medium"
+          >
+            Technician SMS Sign Up
+          </Link>
+        </div>
+        <div className="text-gray-500">
+          <Link href="/tech-signup/terms" className="hover:underline">
+            Terms of Service
+          </Link>
+          <span className="mx-2">|</span>
+          <Link href="/tech-signup/privacy" className="hover:underline">
+            Privacy Policy
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }
