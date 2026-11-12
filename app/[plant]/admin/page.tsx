@@ -42,17 +42,10 @@ function PlantAdmin() {
   const [plantName, setPlantName] = useState("")
   const [logoUrl, setLogoUrl] = useState("/logo.png")
   const [techs, setTechs] = useState<Tech[]>([])
-  const [schedule, setSchedule] = useState<ScheduleRow[]>([])
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState("")
 
-  // New tech form
-  const [newName, setNewName] = useState("")
-  const [newPhone, setNewPhone] = useState("")
-  const [newLang, setNewLang] = useState("en")
-
   // Temporary schedule edits (per tech)
-  // { [techId]: { days: number[], start: string, end: string } }
   const [techSchedules, setTechSchedules] = useState<
     Record<string, { days: number[]; start: string; end: string }>
   >({})
@@ -90,15 +83,13 @@ function PlantAdmin() {
       .eq("plant_id", plantId)
 
     const scheduleList = schedData || []
-    setSchedule(scheduleList)
 
-    // Build the easy-to-edit structure from existing schedule rows
+    // Build easy-to-edit structure from existing schedule rows
     const byTech: Record<string, { days: number[]; start: string; end: string }> = {}
 
     techsList.forEach((t) => {
       const rows = scheduleList.filter((s) => s.technician_id === t.id)
       if (rows.length > 0) {
-        // Assume same start/end for all days (common case)
         byTech[t.id] = {
           days: rows.map((r) => r.day_of_week).sort(),
           start: rows[0].start_time?.slice(0, 5) || "06:00",
@@ -163,25 +154,6 @@ function PlantAdmin() {
     if (!error) load()
   }
 
-  async function addTech(e: React.FormEvent) {
-    e.preventDefault()
-    if (!newName || !newPhone) return
-    const { error } = await supabase.from("technicians").insert({
-      name: newName,
-      phone: newPhone,
-      language: newLang,
-      plant_id: plantId,
-      active: true,
-    })
-    if (error) {
-      alert(error.message)
-      return
-    }
-    setNewName("")
-    setNewPhone("")
-    load()
-  }
-
   async function toggleTech(id: string, active: boolean) {
     await supabase.from("technicians").update({ active: !active }).eq("id", id)
     load()
@@ -214,50 +186,42 @@ function PlantAdmin() {
 
       {/* Technicians */}
       <div className="mb-8 border rounded-lg p-4">
-        <h2 className="font-semibold mb-3">Technicians</h2>
-        <div className="space-y-2 mb-4">
-          {techs.map((t) => (
-            <div key={t.id} className="flex items-center justify-between text-sm">
-              <div>
-                <span className="font-medium">{t.name}</span>
-                <span className="text-gray-500 ml-2">{t.phone}</span>
-                <span className="text-gray-400 ml-2">({t.language})</span>
-              </div>
-              <button
-                onClick={() => toggleTech(t.id, t.active)}
-                className={`text-xs px-2 py-1 rounded ${
-                  t.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
-                }`}
-              >
-                {t.active ? "Active" : "Inactive"}
-              </button>
-            </div>
-          ))}
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold">Technicians</h2>
+          <a
+            href={`/tech-signup/sms?plant=${plantId}`}
+            target="_blank"
+            className="text-sm bg-green-600 text-white px-3 py-1.5 rounded hover:bg-green-700"
+          >
+            + Invite Technician
+          </a>
         </div>
 
-        <form onSubmit={addTech} className="flex gap-2 items-end flex-wrap">
-          <input
-            placeholder="Name"
-            className="border rounded px-2 py-1 flex-1 min-w-[120px]"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-          />
-          <input
-            placeholder="Phone"
-            className="border rounded px-2 py-1 w-36"
-            value={newPhone}
-            onChange={(e) => setNewPhone(e.target.value)}
-          />
-          <select
-            className="border rounded px-2 py-1"
-            value={newLang}
-            onChange={(e) => setNewLang(e.target.value)}
-          >
-            <option value="en">EN</option>
-            <option value="es">ES</option>
-          </select>
-          <button className="bg-green-600 text-white px-3 py-1 rounded text-sm">Add</button>
-        </form>
+        {techs.length === 0 ? (
+          <p className="text-sm text-gray-500">
+            No technicians yet. Use the “Invite Technician” button so they can sign up with SMS consent.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {techs.map((t) => (
+              <div key={t.id} className="flex items-center justify-between text-sm border-b pb-2">
+                <div>
+                  <span className="font-medium">{t.name}</span>
+                  <span className="text-gray-500 ml-2">{t.phone}</span>
+                  <span className="text-gray-400 ml-2">({t.language})</span>
+                </div>
+                <button
+                  onClick={() => toggleTech(t.id, t.active)}
+                  className={`text-xs px-2 py-1 rounded ${
+                    t.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                  }`}
+                >
+                  {t.active ? "Active" : "Inactive"}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Simple Schedule Editor - per employee */}
@@ -329,12 +293,12 @@ function PlantAdmin() {
         </div>
 
         {techs.filter((t) => t.active).length === 0 && (
-          <p className="text-gray-500 text-sm">Add some active technicians first.</p>
+          <p className="text-gray-500 text-sm">No active technicians yet.</p>
         )}
 
         <button
           onClick={saveSchedule}
-          disabled={saving}
+          disabled={saving || techs.filter((t) => t.active).length === 0}
           className="mt-6 bg-blue-600 text-white px-6 py-2.5 rounded font-medium disabled:opacity-50"
         >
           {saving ? "Saving…" : "Save Schedule"}
