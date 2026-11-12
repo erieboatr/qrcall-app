@@ -1,38 +1,68 @@
-'use client'
+"use client"
 
-import { Suspense, useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { Suspense, useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
+import { createClient } from "@supabase/supabase-js"
 
-const ADMIN_PASSWORD = 'MyPlant2026' // change to your password
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
-type Tech = { id: string; name: string; phone: string }
+const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
-function PlantAdminContent() {
-  const params = useParams()
-  const plantId = params.plant as string
+// Temporary plant passwords
+const PLANT_PASSWORDS: Record<string, string> = {
+  ppi: "ppi2026",
+  QRcall: "qrcall2026",
+}
 
-  const [authed, setAuthed] = useState(false)
-  const [password, setPassword] = useState('')
-  const [logoUrl, setLogoUrl] = useState('/logo.png')
-  const [plantName, setPlantName] = useState(plantId)
-  const [techName, setTechName] = useState('')
-  const [techPhone, setTechPhone] = useState('')
-  const [equipName, setEquipName] = useState('')
-  const [equipLoc, setEquipLoc] = useState('')
-  const [techId, setTechId] = useState('')
-  const [day, setDay] = useState(1)
-  const [start, setStart] = useState('06:00:00')
-  const [end, setEnd] = useState('18:00:00')
-  const [message, setMessage] = useState('')
+type Tech = {
+  id: string
+  name: string
+  phone: string
+  language: string
+  active: boolean
+}
+
+type ScheduleRow = {
+  technician_id: string
+  day_of_week: number
+  start_time: string
+  end_time: string
+  plant_id: string
+}
+
+function PlantAdmin() {
+  const searchParams = useSearchParams()
+  const plantId = searchParams.get("plant") || "ppi"
+
+  const [unlocked, setUnlocked] = useState(false)
+  const [password, setPassword] = useState("")
+  const [plantName, setPlantName] = useState("")
+  const [logoUrl, setLogoUrl] = useState("/logo.png")
   const [techs, setTechs] = useState<Tech[]>([])
+  const [schedule, setSchedule] = useState<ScheduleRow[]>([])
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState("")
+
+  // New tech form
+  const [newName, setNewName] = useState("")
+  const [newPhone, setNewPhone] = useState("")
+  const [newLang, setNewLang] = useState("en")
+
+  // Temporary schedule edits (per tech)
+  // { [techId]: { days: number[], start: string, end: string } }
+  const [techSchedules, setTechSchedules] = useState<
+    Record<string, { days: number[]; start: string; end: string }>
+  >({})
 
   useEffect(() => {
     if (!plantId) return
     supabase
-      .from('plants')
-      .select('name, logo_url')
-      .eq('id', plantId)
+      .from("plants")
+      .select("name, logo_url")
+      .eq("id", plantId)
       .maybeSingle()
       .then(({ data }) => {
         if (data?.name) setPlantName(data.name)
@@ -41,194 +71,284 @@ function PlantAdminContent() {
   }, [plantId])
 
   useEffect(() => {
-    if (authed) loadTechs()
-  }, [authed])
+    if (unlocked) load()
+  }, [unlocked, plantId])
 
-  async function loadTechs() {
-    const { data } = await supabase
-      .from('technicians')
-      .select('id, name, phone')
-      .order('name')
-    if (data) setTechs(data)
+  async function load() {
+    const { data: techData } = await supabase
+      .from("technicians")
+      .select("id, name, phone, language, active")
+      .eq("plant_id", plantId)
+      .order("name")
+
+    const techsList = techData || []
+    setTechs(techsList)
+
+    const { data: schedData } = await supabase
+      .from("schedules")
+      .select("*")
+      .eq("plant_id", plantId)
+
+    const scheduleList = schedData || []
+    setSchedule(scheduleList)
+
+    // Build the easy-to-edit structure from existing schedule rows
+    const byTech: Record<string, { days: number[]; start: string; end: string }> = {}
+
+    techsList.forEach((t) => {
+      const rows = scheduleList.filter((s) => s.technician_id === t.id)
+      if (rows.length > 0) {
+        // Assume same start/end for all days (common case)
+        byTech[t.id] = {
+          days: rows.map((r) => r.day_of_week).sort(),
+          start: rows[0].start_time?.slice(0, 5) || "06:00",
+          end: rows[0].end_time?.slice(0, 5) || "14:30",
+        }
+      } else {
+        byTech[t.id] = { days: [], start: "06:00", end: "14:30" }
+      }
+    })
+
+    setTechSchedules(byTech)
   }
 
-  function checkPassword(e: React.FormEvent) {
+  function tryUnlock(e: React.FormEvent) {
     e.preventDefault()
-    if (password === ADMIN_PASSWORD) setAuthed(true)
-    else setMessage('Wrong password')
+    const expected = PLANT_PASSWORDS[plantId] || "admin"
+    if (password === expected) setUnlocked(true)
+    else alert("Wrong password")
   }
 
-  async function addTechnician(e: React.FormEvent) {
+  function toggleDay(techId: string, day: number) {
+    setTechSchedules((prev) => {
+      const current = prev[techId] || { days: [], start: "06:00", end: "14:30" }
+      const days = current.days.includes(day)
+        ? current.days.filter((d) => d !== day)
+        : [...current.days, day].sort()
+      return { ...prev, [techId]: { ...current, days } }
+    })
+  }
+
+  function updateTime(techId: string, field: "start" | "end", value: string) {
+    setTechSchedules((prev) => {
+      const current = prev[techId] || { days: [], start: "06:00", end: "14:30" }
+      return { ...prev, [techId]: { ...current, [field]: value } }
+    })
+  }
+
+  async function saveSchedule() {
+    setSaving(true)
+    setMessage("")
+
+    // Delete existing schedules for this plant
+    await supabase.from("schedules").delete().eq("plant_id", plantId)
+
+    // Build new rows from the simple per-tech form
+    const rows: ScheduleRow[] = []
+    Object.entries(techSchedules).forEach(([techId, conf]) => {
+      conf.days.forEach((day) => {
+        rows.push({
+          plant_id: plantId,
+          technician_id: techId,
+          day_of_week: day,
+          start_time: conf.start,
+          end_time: conf.end,
+        })
+      })
+    })
+
+    const { error } = await supabase.from("schedules").insert(rows)
+    setSaving(false)
+    setMessage(error ? error.message : "Schedule saved successfully")
+    if (!error) load()
+  }
+
+  async function addTech(e: React.FormEvent) {
     e.preventDefault()
-    const { error } = await supabase.from('technicians').insert({
-      name: techName,
-      phone: techPhone,
+    if (!newName || !newPhone) return
+    const { error } = await supabase.from("technicians").insert({
+      name: newName,
+      phone: newPhone,
+      language: newLang,
+      plant_id: plantId,
       active: true,
     })
-    setMessage(error ? error.message : 'Technician added')
-    setTechName('')
-    setTechPhone('')
-    loadTechs()
+    if (error) {
+      alert(error.message)
+      return
+    }
+    setNewName("")
+    setNewPhone("")
+    load()
   }
 
-  async function deleteTech(id: string) {
-    if (!confirm('Delete this technician?')) return
-    const { error } = await supabase.from('technicians').delete().eq('id', id)
-    setMessage(error ? error.message : 'Technician deleted')
-    loadTechs()
+  async function toggleTech(id: string, active: boolean) {
+    await supabase.from("technicians").update({ active: !active }).eq("id", id)
+    load()
   }
 
-  async function addEquipment(e: React.FormEvent) {
-    e.preventDefault()
-    const { error } = await supabase.from('equipment').insert({
-      name: equipName,
-      location: equipLoc,
-      plant_id: plantId,
-    })
-    setMessage(error ? error.message : 'Equipment added')
-    setEquipName('')
-    setEquipLoc('')
-  }
-
-  async function addSchedule(e: React.FormEvent) {
-    e.preventDefault()
-    const { error } = await supabase.from('schedules').insert({
-      technician_id: techId,
-      day_of_week: day,
-      start_time: start,
-      end_time: end,
-      plant_id: plantId,
-    })
-    setMessage(error ? error.message : 'Schedule added')
-  }
-
-  if (!authed) {
+  if (!unlocked) {
     return (
-      <div className="max-w-sm mx-auto p-8">
-        <img src={logoUrl} alt="Logo" className="h-16 mx-auto mb-4" />
-        <h1 className="text-xl font-bold mb-4 text-center">Admin Login</h1>
-        <p className="text-center text-sm text-gray-600 mb-2">{plantName}</p>
-        <form onSubmit={checkPassword} className="space-y-3">
+      <div className="max-w-sm mx-auto p-6 mt-20">
+        <img src={logoUrl} alt="logo" className="h-12 mb-4" />
+        <h1 className="text-xl font-bold mb-4">{plantName || plantId} Admin</h1>
+        <form onSubmit={tryUnlock} className="space-y-3">
           <input
             type="password"
-            className="w-full border p-2"
             placeholder="Password"
+            className="w-full border rounded px-3 py-2"
             value={password}
-            onChange={e => setPassword(e.target.value)}
+            onChange={(e) => setPassword(e.target.value)}
           />
-          <button className="w-full bg-blue-600 text-white py-2 rounded">Enter</button>
-          {message && <p className="text-red-600 text-sm">{message}</p>}
+          <button className="w-full bg-blue-600 text-white py-2 rounded">Unlock</button>
         </form>
       </div>
     )
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-4 space-y-8">
-      <img src={logoUrl} alt="Logo" className="h-12 mb-2" />
-      <h1 className="text-2xl font-bold">Admin — {plantName}</h1>
-      {message && <p className="text-sm text-green-600">{message}</p>}
+    <div className="max-w-3xl mx-auto p-6">
+      <img src={logoUrl} alt="logo" className="h-12 mb-4" />
+      <h1 className="text-2xl font-bold mb-1">{plantName} Admin</h1>
+      <p className="text-gray-600 mb-6">Manage technicians and their weekly schedules.</p>
 
-      <div className="border p-4 rounded">
-        <h2 className="font-semibold mb-2">Current Technicians</h2>
-        {techs.length === 0 && <p className="text-sm text-gray-500">None yet.</p>}
-        <ul className="space-y-2">
-          {techs.map(t => (
-            <li key={t.id} className="flex justify-between items-center text-sm border-b pb-1">
-              <span>
-                {t.name} — {t.phone}
-                <br />
-                <span className="text-xs text-gray-500">{t.id}</span>
-              </span>
-              <button onClick={() => deleteTech(t.id)} className="text-red-600 text-xs">
-                Delete
+      {/* Technicians */}
+      <div className="mb-8 border rounded-lg p-4">
+        <h2 className="font-semibold mb-3">Technicians</h2>
+        <div className="space-y-2 mb-4">
+          {techs.map((t) => (
+            <div key={t.id} className="flex items-center justify-between text-sm">
+              <div>
+                <span className="font-medium">{t.name}</span>
+                <span className="text-gray-500 ml-2">{t.phone}</span>
+                <span className="text-gray-400 ml-2">({t.language})</span>
+              </div>
+              <button
+                onClick={() => toggleTech(t.id, t.active)}
+                className={`text-xs px-2 py-1 rounded ${
+                  t.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                }`}
+              >
+                {t.active ? "Active" : "Inactive"}
               </button>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
+
+        <form onSubmit={addTech} className="flex gap-2 items-end flex-wrap">
+          <input
+            placeholder="Name"
+            className="border rounded px-2 py-1 flex-1 min-w-[120px]"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+          />
+          <input
+            placeholder="Phone"
+            className="border rounded px-2 py-1 w-36"
+            value={newPhone}
+            onChange={(e) => setNewPhone(e.target.value)}
+          />
+          <select
+            className="border rounded px-2 py-1"
+            value={newLang}
+            onChange={(e) => setNewLang(e.target.value)}
+          >
+            <option value="en">EN</option>
+            <option value="es">ES</option>
+          </select>
+          <button className="bg-green-600 text-white px-3 py-1 rounded text-sm">Add</button>
+        </form>
       </div>
 
-      <form onSubmit={addTechnician} className="space-y-2 border p-4 rounded">
-        <h2 className="font-semibold">Add Technician</h2>
-        <input
-          className="w-full border p-2"
-          placeholder="Name"
-          value={techName}
-          onChange={e => setTechName(e.target.value)}
-          required
-        />
-        <input
-          className="w-full border p-2"
-          placeholder="Phone (+1...)"
-          value={techPhone}
-          onChange={e => setTechPhone(e.target.value)}
-          required
-        />
-        <button className="bg-blue-600 text-white px-4 py-2 rounded">Add Technician</button>
-      </form>
+      {/* Simple Schedule Editor - per employee */}
+      <div className="border rounded-lg p-4 mb-6">
+        <h2 className="font-semibold mb-1">Weekly Schedule</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          For each person, check the days they work and set their hours.
+        </p>
 
-      <form onSubmit={addEquipment} className="space-y-2 border p-4 rounded">
-        <h2 className="font-semibold">Add Equipment</h2>
-        <input
-          className="w-full border p-2"
-          placeholder="Equipment name"
-          value={equipName}
-          onChange={e => setEquipName(e.target.value)}
-          required
-        />
-        <input
-          className="w-full border p-2"
-          placeholder="Location"
-          value={equipLoc}
-          onChange={e => setEquipLoc(e.target.value)}
-        />
-        <button className="bg-blue-600 text-white px-4 py-2 rounded">Add Equipment</button>
-      </form>
+        <div className="space-y-6">
+          {techs
+            .filter((t) => t.active)
+            .map((tech) => {
+              const conf = techSchedules[tech.id] || {
+                days: [],
+                start: "06:00",
+                end: "14:30",
+              }
 
-      <form onSubmit={addSchedule} className="space-y-2 border p-4 rounded">
-        <h2 className="font-semibold">Add Schedule</h2>
-        <select
-          className="w-full border p-2"
-          value={techId}
-          onChange={e => setTechId(e.target.value)}
-          required
+              return (
+                <div key={tech.id} className="border rounded-lg p-4 bg-gray-50">
+                  <div className="font-medium text-lg mb-3">{tech.name}</div>
+
+                  {/* Days */}
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {DAYS.map((dayName, dayIndex) => {
+                      const checked = conf.days.includes(dayIndex)
+                      return (
+                        <label
+                          key={dayIndex}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded border cursor-pointer text-sm ${
+                            checked
+                              ? "bg-blue-600 text-white border-blue-600"
+                              : "bg-white border-gray-300 hover:border-blue-400"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            className="sr-only"
+                            checked={checked}
+                            onChange={() => toggleDay(tech.id, dayIndex)}
+                          />
+                          {dayName.slice(0, 3)}
+                        </label>
+                      )
+                    })}
+                  </div>
+
+                  {/* Times */}
+                  <div className="flex items-center gap-3">
+                    <label className="text-sm text-gray-600">Hours:</label>
+                    <input
+                      type="time"
+                      className="border rounded px-2 py-1"
+                      value={conf.start}
+                      onChange={(e) => updateTime(tech.id, "start", e.target.value)}
+                    />
+                    <span className="text-gray-500">to</span>
+                    <input
+                      type="time"
+                      className="border rounded px-2 py-1"
+                      value={conf.end}
+                      onChange={(e) => updateTime(tech.id, "end", e.target.value)}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+        </div>
+
+        {techs.filter((t) => t.active).length === 0 && (
+          <p className="text-gray-500 text-sm">Add some active technicians first.</p>
+        )}
+
+        <button
+          onClick={saveSchedule}
+          disabled={saving}
+          className="mt-6 bg-blue-600 text-white px-6 py-2.5 rounded font-medium disabled:opacity-50"
         >
-          <option value="">Select technician</option>
-          {techs.map(t => (
-            <option key={t.id} value={t.id}>
-              {t.name} ({t.id.slice(0, 8)}…)
-            </option>
-          ))}
-        </select>
-        <input
-          className="w-full border p-2"
-          type="number"
-          placeholder="Day (0-6)"
-          value={day}
-          onChange={e => setDay(Number(e.target.value))}
-        />
-        <input
-          className="w-full border p-2"
-          placeholder="Start (HH:MM:SS)"
-          value={start}
-          onChange={e => setStart(e.target.value)}
-        />
-        <input
-          className="w-full border p-2"
-          placeholder="End (HH:MM:SS)"
-          value={end}
-          onChange={e => setEnd(e.target.value)}
-        />
-        <button className="bg-blue-600 text-white px-4 py-2 rounded">Add Schedule</button>
-      </form>
+          {saving ? "Saving…" : "Save Schedule"}
+        </button>
+        {message && <p className="mt-2 text-sm">{message}</p>}
+      </div>
     </div>
   )
 }
 
 export default function PlantAdminPage() {
   return (
-    <Suspense fallback={<div className="p-6 text-center">Loading...</div>}>
-      <PlantAdminContent />
+    <Suspense fallback={<div className="p-6">Loading…</div>}>
+      <PlantAdmin />
     </Suspense>
   )
 }
