@@ -1,7 +1,7 @@
 "use client"
 
 import { Suspense, useState, useEffect } from "react"
-import { useSearchParams } from "next/navigation"
+import { useParams } from "next/navigation"          // ← changed
 import { createClient } from "@supabase/supabase-js"
 
 const supabase = createClient(
@@ -34,8 +34,10 @@ type ScheduleRow = {
 }
 
 function PlantAdmin() {
-  const searchParams = useSearchParams()
-  const plantId = searchParams.get("plant") || "ppi"
+  const params = useParams()                             // ← changed
+  const plantId = (params.plant as string) || "ppi"      // ← changed
+
+  // ... rest of the code stays the same
 
   const [unlocked, setUnlocked] = useState(false)
   const [password, setPassword] = useState("")
