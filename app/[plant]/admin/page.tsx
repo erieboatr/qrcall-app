@@ -118,7 +118,11 @@ function PlantAdmin() {
 
   function tryUnlock(e: React.FormEvent) {
     e.preventDefault()
-    const expected = PLANT_PASSWORDS[plantId] || "admin"
+    const normalized = plantId.toLowerCase()
+    const key = Object.keys(PLANT_PASSWORDS).find(
+      (k) => k.toLowerCase() === normalized
+    )
+    const expected = key ? PLANT_PASSWORDS[key] : "admin"
     if (password === expected) setUnlocked(true)
     else alert("Wrong password")
   }
