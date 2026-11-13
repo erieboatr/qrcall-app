@@ -265,11 +265,11 @@ function PlantAdmin() {
     )
   }
 
-  const { year, month, daysInMonth, firstDay } = getDaysInMonth(currentMonth)
+  const { year, month, daysInMonth } = getDaysInMonth(currentMonth)
   const monthName = currentMonth.toLocaleString("default", { month: "long", year: "numeric" })
 
   return (
-    <div className="max-w-5xl mx-auto p-6 print:p-2">
+    <div className="max-w-7xl mx-auto p-6 print:p-2">
       <style jsx global>{`
         @media print {
           body * { visibility: hidden; }
@@ -388,7 +388,7 @@ function PlantAdmin() {
       </div>
 
       {/* Month Calendar - printable */}
-      <div className="print-area border rounded-lg p-4">
+      <div className="print-area border rounded-lg p-4 overflow-x-auto">
         <div className="flex items-center justify-between mb-4 no-print">
           <h2 className="font-semibold text-xl">{monthName}</h2>
           <div className="flex gap-2">
@@ -414,114 +414,110 @@ function PlantAdmin() {
           <h1 className="text-2xl font-bold">{plantName} — {monthName}</h1>
         </div>
 
-        <div className="grid grid-cols-7 gap-1 text-sm">
-          {DAYS.map((d) => (
-            <div key={d} className="text-center font-semibold py-2 bg-gray-100">
-              {d.slice(0, 3)}
-            </div>
-          ))}
-          {Array.from({ length: firstDay }).map((_, i) => (
-            <div key={`empty-${i}`} className="min-h-[80px] bg-gray-50" />
-          ))}
-          {Array.from({ length: daysInMonth }).map((_, i) => {
-            const day = i + 1
-            const dateStr = formatDate(year, month, day)
-            const shifts = getScheduleForDate(dateStr)
-            const isEditing = editingDay === dateStr
-
-            return (
-              <div
-                key={day}
-                className="min-h-[100px] border p-1 bg-white relative"
-                onClick={() => setEditingDay(isEditing ? null : dateStr)}
-              >
-                <div className="font-semibold text-xs mb-1">{day}</div>
-                <div className="space-y-0.5">
-                  {shifts.map((s, idx) => {
-                    const tech = techs.find((t) => t.id === s.techId)
-                    return (
-                      <div
-                        key={idx}
-                        className={`text-xs px-1 py-0.5 rounded truncate ${
-                          s.isOverride ? "bg-yellow-200" : "bg-blue-100"
-                        }`}
-                        title={`${tech?.name}: ${s.start}–${s.end}`}
-                      >
-                        {tech?.name?.split(" ")[0]} {s.start}
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-
-        {/* Edit modal / panel */}
-        {editingDay && (
-          <div className="no-print mt-4 border rounded-lg p-4 bg-yellow-50">
-            <h3 className="font-semibold mb-2">Edit {editingDay}</h3>
-            <p className="text-sm text-gray-600 mb-3">
-              Yellow = one-off override. Blue = from weekly rules.
-            </p>
-            <div className="space-y-2">
-              {techs.filter((t) => t.active).map((tech) => {
-                const existing = getScheduleForDate(editingDay).find((s) => s.techId === tech.id)
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr>
+              <th className="border p-2 bg-gray-100 text-left sticky left-0 bg-white min-w-[120px]">Name</th>
+              {Array.from({ length: daysInMonth }).map((_, i) => {
+                const day = i + 1
+                const date = new Date(year, month, day)
+                const dayName = DAYS[date.getDay()].slice(0, 3)
                 return (
-                  <div key={tech.id} className="flex items-center gap-2 text-sm">
-                    <span className="w-32 font-medium">{tech.name}</span>
-                    {existing ? (
-                      <>
-                        <input
-                          type="time"
-                          defaultValue={existing.start}
-                          className="border rounded px-1"
-                          id={`start-${tech.id}`}
-                        />
-                        <span>to</span>
-                        <input
-                          type="time"
-                          defaultValue={existing.end}
-                          className="border rounded px-1"
-                          id={`end-${tech.id}`}
-                        />
-                        <button
-                          className="text-blue-600 text-xs"
-                          onClick={() => {
-                            const start = (document.getElementById(`start-${tech.id}`) as HTMLInputElement)?.value
-                            const end = (document.getElementById(`end-${tech.id}`) as HTMLInputElement)?.value
-                            if (start && end) saveOverride(editingDay, tech.id, start, end)
-                          }}
-                        >
-                          Save Override
-                        </button>
-                        <button
-                          className="text-red-600 text-xs"
-                          onClick={() => removeOverride(editingDay, tech.id)}
-                        >
-                          Remove
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        className="text-green-600 text-xs"
-                        onClick={() => saveOverride(editingDay, tech.id, "08:00", "16:00")}
-                      >
-                        + Add this day
-                      </button>
-                    )}
-                  </div>
+                  <th key={day} className="border p-1 bg-gray-100 text-center min-w-[70px]">
+                    <div className="font-semibold">{day}</div>
+                    <div className="text-xs text-gray-500">{dayName}</div>
+                  </th>
                 )
               })}
-            </div>
-            <button
-              className="mt-3 text-sm text-gray-600"
-              onClick={() => setEditingDay(null)}
-            >
-              Close
-            </button>
-          </div>
-        )}
+            </tr>
+          </thead>
+          <tbody>
+            {techs.filter(t => t.active).map((tech) => (
+              <tr key={tech.id}>
+                <td className="border p-2 font-medium sticky left-0 bg-white">{tech.name}</td>
+                {Array.from({ length: daysInMonth }).map((_, i) => {
+                  const day = i + 1
+                  const dateStr = formatDate(year, month, day)
+                  const shifts = getScheduleForDate(dateStr).filter(s => s.techId === tech.id)
+                  const shift = shifts[0]
+                  const isOverride = shift?.isOverride
+                  const isEditing = editingDay === `${dateStr}-${tech.id}`
+
+                  return (
+                    <td
+                      key={day}
+                      className={`border p-1 text-center cursor-pointer relative ${
+                        isOverride ? "bg-yellow-100" : ""
+                      }`}
+                      onClick={() => setEditingDay(isEditing ? null : `${dateStr}-${tech.id}`)}
+                    >
+                      {shift ? (
+                        <div className="text-xs">
+                          {shift.start}<br />{shift.end}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 text-xs">OFF</span>
+                      )}
+
+                      {isEditing && (
+                        <div className="absolute z-10 mt-1 left-0 bg-white border shadow-lg p-3 rounded no-print" style={{ minWidth: "180px" }}>
+                          <div className="text-xs font-semibold mb-2">{tech.name}<br />{dateStr}</div>
+                          <div className="flex flex-col gap-2">
+                            <input
+                              type="time"
+                              defaultValue={shift?.start || "08:00"}
+                              className="border rounded px-1 text-xs"
+                              id={`edit-start-${tech.id}-${day}`}
+                            />
+                            <input
+                              type="time"
+                              defaultValue={shift?.end || "16:00"}
+                              className="border rounded px-1 text-xs"
+                              id={`edit-end-${tech.id}-${day}`}
+                            />
+                            <button
+                              className="bg-blue-600 text-white text-xs px-2 py-1 rounded"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                const start = (document.getElementById(`edit-start-${tech.id}-${day}`) as HTMLInputElement)?.value
+                                const end = (document.getElementById(`edit-end-${tech.id}-${day}`) as HTMLInputElement)?.value
+                                if (start && end) {
+                                  saveOverride(dateStr, tech.id, start, end)
+                                  setEditingDay(null)
+                                }
+                              }}
+                            >
+                              Save Override
+                            </button>
+                            <button
+                              className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                removeOverride(dateStr, tech.id)
+                                setEditingDay(null)
+                              }}
+                            >
+                              Mark OFF
+                            </button>
+                            <button
+                              className="text-xs text-gray-500"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setEditingDay(null)
+                              }}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   )
