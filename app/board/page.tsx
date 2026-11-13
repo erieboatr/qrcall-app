@@ -65,33 +65,45 @@ function BoardContent() {
       // Check overrides first
       const { data: overrideData } = await supabase
         .from("schedule_overrides")
-        .select("technicians(name), start_time, end_time")
+        .select("technician_id, start_time, end_time, technicians(name)")
         .eq("plant_id", plant)
         .eq("override_date", today)
-        .lte("start_time", currentTime)
-        .gte("end_time", currentTime)
 
-      if (overrideData && overrideData.length > 0) {
-        const names = overrideData.map((row: any) => row.technicians?.name).filter(Boolean)
-        setOnDuty(names)
-        return
+      const offTechIds = new Set<string>()
+      const onDutyFromOverride: string[] = []
+
+      if (overrideData) {
+        for (const row of overrideData) {
+          if (!row.start_time || !row.end_time) {
+            offTechIds.add(row.technician_id)
+          } else if (row.start_time <= currentTime && row.end_time >= currentTime) {
+            const name = (row as any).technicians?.name
+            if (name) onDutyFromOverride.push(name)
+          }
+        }
       }
 
-      // Fall back to weekly rules
-      const { data } = await supabase
+      // Weekly rules, excluding anyone marked OFF
+      const { data: weeklyData } = await supabase
         .from("schedules")
-        .select("technicians(name)")
+        .select("technician_id, technicians(name)")
         .eq("plant_id", plant)
         .eq("day_of_week", dayOfWeek)
         .lte("start_time", currentTime)
         .gte("end_time", currentTime)
 
-      if (data) {
-        const names = data.map((row: any) => row.technicians?.name).filter(Boolean)
-        setOnDuty(names)
-      } else {
-        setOnDuty([])
+      const weeklyNames: string[] = []
+      if (weeklyData) {
+        for (const row of weeklyData) {
+          if (!offTechIds.has(row.technician_id)) {
+            const name = (row as any).technicians?.name
+            if (name) weeklyNames.push(name)
+          }
+        }
       }
+
+      const allNames = [...new Set([...onDutyFromOverride, ...weeklyNames])]
+      setOnDuty(allNames)
     }
 
     loadLogo()
