@@ -296,14 +296,25 @@ function PlantAdmin() {
 
   return (
     <div className="max-w-7xl mx-auto p-6 print:p-2">
-      <style jsx global>{`
-        @media print {
-          body * { visibility: hidden; }
-          .print-area, .print-area * { visibility: visible; }
-          .print-area { position: absolute; left: 0; top: 0; width: 100%; }
-          .no-print { display: none !important; }
-        }
-      `}</style>
+     <style jsx global>{`
+  @media print {
+    @page {
+      size: letter landscape;
+      margin: 0.4in;
+    }
+    body * { visibility: hidden; }
+    .print-area, .print-area * { visibility: visible; }
+    .print-area { 
+      position: absolute; 
+      left: 0; 
+      top: 0; 
+      width: 100%; 
+    }
+    .no-print { display: none !important; }
+    table { font-size: 10px; }
+    th, td { padding: 2px 4px !important; }
+  }
+`}</style>
 
       <div className="no-print">
         <img src={logoUrl} alt="logo" className="h-12 mb-4" />
