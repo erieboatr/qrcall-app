@@ -38,34 +38,58 @@ function SignupForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-
+  
     if (!consent) {
       setError('You must agree to receive messages.')
       return
     }
-
+  
     setLoading(true)
-
-    const { error: insertError } = await supabase
-  .from('technicians')
-  .upsert(
-    {
-      name,
-      phone,
-      language,
-      plant_id: plantId,
-      active: true,
-      sms_consent: true,
-    },
-    { onConflict: 'phone' }   // uses the phone column as the unique key
-  )
-
-    if (insertError) {
-      setLoading(false)
-      setError(insertError.message)
-      return
+  
+    // Check if this phone already exists
+    const { data: existing } = await supabase
+      .from('technicians')
+      .select('id, plant_id')
+      .eq('phone', phone)
+      .maybeSingle()
+  
+    if (existing) {
+      // Phone already exists — update name/language/consent but keep their current plant
+      const { error: updateError } = await supabase
+        .from('technicians')
+        .update({
+          name,
+          language,
+          sms_consent: true,
+          active: true,
+        })
+        .eq('id', existing.id)
+  
+      if (updateError) {
+        setLoading(false)
+        setError(updateError.message)
+        return
+      }
+    } else {
+      // New technician — insert with the plant from the signup link
+      const { error: insertError } = await supabase
+        .from('technicians')
+        .insert({
+          name,
+          phone,
+          language,
+          plant_id: plantId,
+          active: true,
+          sms_consent: true,
+        })
+  
+      if (insertError) {
+        setLoading(false)
+        setError(insertError.message)
+        return
+      }
     }
-
+  
     // Send confirmation SMS
     try {
       await fetch("https://slrxmogriwsnbondquwq.supabase.co/functions/v1/send-signup-confirmation", {
@@ -76,7 +100,7 @@ function SignupForm() {
     } catch (err) {
       console.error("Confirmation SMS failed:", err)
     }
-
+  
     setLoading(false)
     setDone(true)
   }
