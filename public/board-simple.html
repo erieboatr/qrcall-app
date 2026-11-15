@@ -72,17 +72,54 @@
       if (plantData?.logo_url) document.getElementById("logo").src = plantData.logo_url
 
       const now = new Date()
+      const today = now.toISOString().slice(0, 10)
       const day = now.getDay()
       const time = now.toTimeString().slice(0, 5)
-      const { data: schedules } = await client
+
+      // Check overrides first
+      const { data: overrideData } = await client
+        .from("schedule_overrides")
+        .select("technician_id, start_time, end_time, technicians(name)")
+        .eq("plant_id", plant)
+        .eq("override_date", today)
+
+      const offTechIds = new Set()
+      const onDutyFromOverride = []
+
+      if (overrideData) {
+        for (const row of overrideData) {
+          if (!row.start_time || !row.end_time) {
+            offTechIds.add(row.technician_id)
+          } else if (row.start_time <= time && row.end_time >= time) {
+            const name = row.technicians?.name
+            if (name) onDutyFromOverride.push(name)
+          }
+        }
+      }
+
+      // Weekly rules, excluding anyone marked OFF
+      const { data: weeklyData } = await client
         .from("schedules")
-        .select("technicians(name)")
+        .select("technician_id, technicians(name)")
         .eq("plant_id", plant)
         .eq("day_of_week", day)
         .lte("start_time", time)
         .gte("end_time", time)
-      const names = (schedules || []).map(s => s.technicians?.name).filter(Boolean)
-      document.getElementById("onduty").textContent = names.length > 0 ? "On duty: " + names.join(", ") : "On duty: No one scheduled"
+
+      const weeklyNames = []
+      if (weeklyData) {
+        for (const row of weeklyData) {
+          if (!offTechIds.has(row.technician_id)) {
+            const name = row.technicians?.name
+            if (name) weeklyNames.push(name)
+          }
+        }
+      }
+
+      const allNames = [...new Set([...onDutyFromOverride, ...weeklyNames])]
+      document.getElementById("onduty").textContent = allNames.length > 0
+        ? "On duty: " + allNames.join(", ")
+        : "On duty: No one scheduled"
 
       const { data: calls } = await client
         .from("service_calls")

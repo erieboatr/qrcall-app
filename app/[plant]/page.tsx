@@ -1,96 +1,70 @@
-'use client'
+"use client"
 
-import { Suspense, useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
-import Link from 'next/link'
+import { Suspense, useEffect, useState } from "react"
+import { useParams } from "next/navigation"
+import { createClient } from "@supabase/supabase-js"
 
-function PlantHomeContent() {
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
+function PlantPageContent() {
   const params = useParams()
   const plantId = params.plant as string
 
-  const [plant, setPlant] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const [plantName, setPlantName] = useState("")
+  const [logoUrl, setLogoUrl] = useState("/logo.png")
 
   useEffect(() => {
     if (!plantId) return
     supabase
-      .from('plants')
-      .select('*')
-      .eq('id', plantId)
+      .from("plants")
+      .select("name, logo_url")
+      .eq("id", plantId)
       .maybeSingle()
       .then(({ data }) => {
-        setPlant(data)
-        setLoading(false)
+        if (data?.name) setPlantName(data.name)
+        if (data?.logo_url) setLogoUrl(data.logo_url)
       })
   }, [plantId])
 
-  if (loading) return <div className="p-8 text-center">Loading…</div>
-  if (!plant) return <div className="p-8 text-center">Plant not found</div>
-
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center p-6">
-      <img
-        src={plant.logo_url || '/logo.png'}
-        alt={plant.name}
-        className="h-20 mb-6"
-      />
-      <h1 className="text-3xl font-bold mb-2">{plant.name}</h1>
-      {plant.city && (
-        <p className="text-gray-600 mb-6">
-          {plant.city}{plant.state ? `, ${plant.state}` : ''}
-        </p>
-      )}
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+      <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
+        <img src={logoUrl} alt="logo" className="h-20 mx-auto mb-6" />
+        <h1 className="text-3xl font-bold mb-2">{plantName || plantId}</h1>
+        <p className="text-gray-600 mb-8">QRcall Service Alerts</p>
 
-      <div className="flex flex-col sm:flex-row gap-4">
-        <Link
-          href={`/board?plant=${plantId}`}
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold text-center"
-        >
-          View Live Board
-        </Link>
-        <Link
-          href={`/${plantId}/admin`}
-          className="bg-gray-700 text-white px-6 py-3 rounded-lg font-semibold text-center"
-        >
-          Admin
-        </Link>
-      </div>
-
-      {plant.poc && (
-        <div className="mt-10 text-sm text-gray-600 text-center">
-          <p>Contact: {plant.poc}</p>
-          {plant.phone && <p>{plant.phone}</p>}
-        </div>
-      )}
-
-      <div className="mt-12 text-center text-sm space-y-2">
-        <div>
-          <Link
-            href={`/tech-signup?plant=${plantId}`}
-            className="text-blue-600 hover:underline font-medium"
+        <div className="space-y-3">
+          <a
+            href={`/board?plant=${plantId}`}
+            className="block w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700"
           >
-            Technician SMS Sign Up
-          </Link>
-        </div>
-        <div className="text-gray-500">
-          <Link href="/tech-signup/terms" className="hover:underline">
-            Terms of Service
-          </Link>
-          <span className="mx-2">|</span>
-          <Link href="/tech-signup/privacy" className="hover:underline">
-            Privacy Policy
-          </Link>
+            Live Status Board
+          </a>
+          <a
+            href={`/tech-signup/sms?plant=${plantId}`}
+            className="block w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700"
+          >
+            Tech Signup
+          </a>
+          <a
+            href={`/${plantId}/admin`}
+            className="block w-full bg-gray-800 text-white py-3 rounded-lg font-semibold hover:bg-gray-900"
+          >
+            Admin
+          </a>
         </div>
       </div>
     </div>
   )
 }
 
-export default function PlantHomePage() {
+export default function PlantPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center">Loading…</div>}>
-      <PlantHomeContent />
+    <Suspense fallback={<div className="p-6 text-center">Loading…</div>}>
+      <PlantPageContent />
     </Suspense>
   )
 }

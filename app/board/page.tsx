@@ -63,20 +63,48 @@ function BoardContent() {
       const dayOfWeek = eastern.getDay()
       const currentTime = eastern.toTimeString().slice(0, 5)
 
-      const { data } = await supabase
+      // Check overrides first
+      const { data: overrideData } = await supabase
+        .from("schedule_overrides")
+        .select("technician_id, start_time, end_time, technicians(name)")
+        .eq("plant_id", plant)
+        .eq("override_date", today)
+
+      const offTechIds = new Set<string>()
+      const onDutyFromOverride: string[] = []
+
+      if (overrideData) {
+        for (const row of overrideData) {
+          if (!row.start_time || !row.end_time) {
+            offTechIds.add(row.technician_id)
+          } else if (row.start_time <= currentTime && row.end_time >= currentTime) {
+            const name = (row as any).technicians?.name
+            if (name) onDutyFromOverride.push(name)
+          }
+        }
+      }
+
+      // Weekly rules, excluding anyone marked OFF
+      const { data: weeklyData } = await supabase
         .from("schedules")
-        .select("technicians(name)")
+        .select("technician_id, technicians(name)")
         .eq("plant_id", plant)
         .eq("day_of_week", dayOfWeek)
         .lte("start_time", currentTime)
         .gte("end_time", currentTime)
 
-      if (data) {
-        const names = data.map((row: any) => row.technicians?.name).filter(Boolean)
-        setOnDuty(names)
-      } else {
-        setOnDuty([])
+      const weeklyNames: string[] = []
+      if (weeklyData) {
+        for (const row of weeklyData) {
+          if (!offTechIds.has(row.technician_id)) {
+            const name = (row as any).technicians?.name
+            if (name) weeklyNames.push(name)
+          }
+        }
       }
+
+      const allNames = [...new Set([...onDutyFromOverride, ...weeklyNames])]
+      setOnDuty(allNames)
     }
 
     loadLogo()
@@ -144,12 +172,10 @@ function BoardContent() {
                 {call.priority} • {call.status}
               </div>
 
-              {/* Original description (hidden when Needs More Work) */}
               {call.description && call.status !== "Needs More Work" && (
                 <div className="mt-2 text-gray-300">{call.description}</div>
               )}
 
-              {/* Separate Additional Work block */}
               {call.status === "Needs More Work" && call.description && (
                 <div className="mt-3 p-4 bg-orange-900/60 border-l-4 border-orange-500 rounded-r-lg">
                   <div className="text-sm font-bold text-orange-300 uppercase tracking-wide">
