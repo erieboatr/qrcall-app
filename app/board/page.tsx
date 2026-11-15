@@ -58,8 +58,10 @@ function BoardContent() {
 
     async function loadOnDuty() {
       const now = new Date()
-      const dayOfWeek = now.getUTCDay()
-      const currentTime = now.toISOString().slice(11, 16)
+      const eastern = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }))
+      const today = eastern.toISOString().slice(0, 10)
+      const dayOfWeek = eastern.getDay()
+      const currentTime = eastern.toTimeString().slice(0, 5)
 
       const { data } = await supabase
         .from("schedules")
