@@ -63,7 +63,6 @@ function BoardContent() {
       const dayOfWeek = eastern.getDay()
       const currentTime = eastern.toTimeString().slice(0, 5)
 
-      // Check overrides first
       const { data: overrideData } = await supabase
         .from("schedule_overrides")
         .select("technician_id, start_time, end_time, technicians(name)")
@@ -84,7 +83,6 @@ function BoardContent() {
         }
       }
 
-      // Weekly rules, excluding anyone marked OFF
       const { data: weeklyData } = await supabase
         .from("schedules")
         .select("technician_id, technicians(name)")
@@ -158,78 +156,82 @@ function BoardContent() {
           </div>
         )}
 
-{calls.map((call) => (
-  <div
-    key={call.id}
-    className="flex items-stretch gap-6 bg-gray-800 rounded-xl p-5 shadow-lg"
-  >
-    <div className={`w-3 rounded ${priorityColor(call.priority)}`} />
+        {calls.map((call) => (
+          <div
+            key={call.id}
+            className="flex items-stretch gap-6 bg-gray-800 rounded-xl p-5 shadow-lg"
+          >
+            <div className={`w-3 rounded ${priorityColor(call.priority)}`} />
 
-    <div className="flex-1">
-      <div className="text-3xl font-bold">{call.equipment_name}</div>
-      <div className="text-xl text-gray-300">{call.location}</div>
-      <div className="text-lg mt-1 font-semibold">
-        {call.priority} • {call.status}
-      </div>
+            <div className="flex-1">
+              <div className="text-3xl font-bold">{call.equipment_name}</div>
+              <div className="text-xl text-gray-300">{call.location}</div>
+              <div className="text-lg mt-1 font-semibold">
+                {call.priority} • {call.status}
+              </div>
 
-      {call.description && call.status !== "Needs More Work" && (
-        <div className="mt-2 text-gray-300">{call.description}</div>
-      )}
+              {call.description && call.status !== "Needs More Work" && (
+                <div className="mt-2 text-gray-300">{call.description}</div>
+              )}
 
-      {call.status === "Needs More Work" && call.description && (
-        <div className="mt-3 p-4 bg-orange-900/60 border-l-4 border-orange-500 rounded-r-lg">
-          <div className="text-sm font-bold text-orange-300 uppercase tracking-wide">
-            Needs Additional Work
-          </div>
-          <div className="mt-1 text-white text-lg">{call.description}</div>
-          {call.updated_at && (
-            <div className="text-xs text-orange-200 mt-2">
-              Updated: {new Date(call.updated_at).toLocaleString()}
+              {call.status === "Needs More Work" && call.description && (
+                <div className="mt-3 p-4 bg-orange-900/60 border-l-4 border-orange-500 rounded-r-lg">
+                  <div className="text-sm font-bold text-orange-300 uppercase tracking-wide">
+                    Needs Additional Work
+                  </div>
+                  <div className="mt-1 text-white text-lg">{call.description}</div>
+                  {call.updated_at && (
+                    <div className="text-xs text-orange-200 mt-2">
+                      Updated: {new Date(call.updated_at).toLocaleString()}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {call.photo_url && (
+                <div className="mt-3">
+                  <a href={call.photo_url} target="_blank" rel="noopener noreferrer">
+                    <img
+                      src={call.photo_url}
+                      alt="Issue photo"
+                      className="max-h-40 rounded border border-gray-600 hover:opacity-90"
+                    />
+                  </a>
+                  <div className="text-xs text-gray-400 mt-1">Click photo to enlarge</div>
+                </div>
+              )}
+
+              {call.submitter_name && (
+                <div className="text-sm mt-2 text-gray-400">
+                  Submitted by: {call.submitter_name}
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      )}
 
-      {call.photo_url && (
-        <div className="mt-3">
-          <a href={call.photo_url} target="_blank" rel="noopener noreferrer">
-            <img
-              src={call.photo_url}
-              alt="Issue photo"
-              className="max-h-40 rounded border border-gray-600 hover:opacity-90"
-            />
-          </a>
-          <div className="text-xs text-gray-400 mt-1">Click photo to enlarge</div>
-        </div>
-      )}
-
-      {call.submitter_name && (
-        <div className="text-sm mt-2 text-gray-400">
-          Submitted by: {call.submitter_name}
-        </div>
-      )}
-    </div>
-
-    <div className="text-right text-base text-gray-300 min-w-[220px]">
-      <div>
-        <span className="text-gray-400">Submitted:</span><br />
-        {call.submitted_at ? new Date(call.submitted_at).toLocaleString() : "—"}
+            <div className="text-right text-base text-gray-300 min-w-[220px]">
+              <div>
+                <span className="text-gray-400">Submitted:</span><br />
+                {call.submitted_at ? new Date(call.submitted_at).toLocaleString() : "—"}
+              </div>
+              {call.arrived_at && (
+                <div className="mt-2">
+                  <span className="text-gray-400">Arrived:</span><br />
+                  {new Date(call.arrived_at).toLocaleString()}
+                </div>
+              )}
+              {call.status === "Needs More Work" && call.updated_at && (
+                <div className="mt-2">
+                  <span className="text-gray-400">More Work:</span><br />
+                  {new Date(call.updated_at).toLocaleString()}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
-      {call.arrived_at && (
-        <div className="mt-2">
-          <span className="text-gray-400">Arrived:</span><br />
-          {new Date(call.arrived_at).toLocaleString()}
-        </div>
-      )}
-      {call.status === "Needs More Work" && call.updated_at && (
-        <div className="mt-2">
-          <span className="text-gray-400">More Work:</span><br />
-          {new Date(call.updated_at).toLocaleString()}
-        </div>
-      )}
     </div>
-  </div>
-))}
+  )
+}
 
 export default function BoardPage() {
   return (
