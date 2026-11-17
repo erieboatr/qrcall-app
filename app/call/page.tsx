@@ -124,7 +124,10 @@ function CallForm() {
     if (photo) {
       const fileName = `${Date.now()}-${photo.name}`
       const { error: uploadError } = await supabase.storage.from('call-photos').upload(fileName, photo)
-      if (!uploadError) {
+      if (uploadError) {
+        console.error("Upload error:", uploadError)
+        alert("Photo upload failed: " + uploadError.message)
+      } else {
         const { data: urlData } = supabase.storage.from('call-photos').getPublicUrl(fileName)
         photoUrl = urlData.publicUrl
       }
