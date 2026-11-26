@@ -2,6 +2,7 @@
 import { Suspense, useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { TechOnCall } from '@/components/tech-on-call'
 
 const translations = {
   en: {
@@ -16,12 +17,7 @@ const translations = {
     submitting: 'Submitting...',
     successTitle: 'Call Submitted',
     successMsg: 'A technician has been notified.',
-    arrived: 'Arrived',
-    completed: 'Completed',
-    needsMore: 'Needs More Work',
-    moreWorkNote: 'What additional work is needed?',
-    saveNote: 'Save Additional Work Note',
-    currentCall: 'Current Call',
+    returnHint: 'Back to this machine shows the call status. Technicians sign in there with their mobile number and PIN.',
     critical: 'Critical',
     high: 'High',
     medium: 'Medium',
@@ -39,12 +35,7 @@ const translations = {
     submitting: 'Enviando...',
     successTitle: 'Llamada Enviada',
     successMsg: 'Se ha notificado a un técnico.',
-    arrived: 'Llegué',
-    completed: 'Completado',
-    needsMore: 'Necesita Más Trabajo',
-    moreWorkNote: '¿Qué trabajo adicional se necesita?',
-    saveNote: 'Guardar Nota de Trabajo',
-    currentCall: 'Llamada Actual',
+    returnHint: 'Volver a esta máquina muestra el estado. Los técnicos inician sesión ahí con su número y PIN.',
     critical: 'Crítico',
     high: 'Alto',
     medium: 'Medio',
@@ -52,13 +43,30 @@ const translations = {
   },
 }
 
+type ExistingCall = {
+  id?: string | null
+  equipment_name?: string | null
+  location?: string | null
+  priority?: string | null
+  status?: string | null
+  description?: string | null
+  work_notes?: string | null
+  submitter_name?: string | null
+  photo_url?: string | null
+}
+
 function CallForm() {
   const searchParams = useSearchParams()
+  const urlPlant = searchParams.get('plant') || 'QRcall'
+  const urlEquip = searchParams.get('equip') || ''
+  const urlLoc = searchParams.get('loc') || ''
+  const urlKey = `${urlPlant}|${urlEquip}|${urlLoc}`
   const [lang, setLang] = useState<'en' | 'es'>('en')
-  const [plant, setPlant] = useState('QRcall')
+  const [plant, setPlant] = useState(urlPlant)
   const [logoUrl, setLogoUrl] = useState<string | null>(null)
-  const [equip, setEquip] = useState('')
-  const [loc, setLoc] = useState('')
+  const [equip, setEquip] = useState(urlEquip)
+  const [loc, setLoc] = useState(urlLoc)
+  const [seenUrl, setSeenUrl] = useState(urlKey)
   const [priority, setPriority] = useState('Medium')
   const [description, setDescription] = useState('')
   const [submitter, setSubmitter] = useState('')
@@ -66,42 +74,42 @@ function CallForm() {
   const [honeypot, setHoneypot] = useState('')
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
-  const [existingCall, setExistingCall] = useState<any>(null)
-  const [moreWorkNote, setMoreWorkNote] = useState('')
+  const [existingCall, setExistingCall] = useState<ExistingCall | null>(null)
   const t = translations[lang]
+  const devPreview = process.env.NODE_ENV === 'development' ? searchParams.get('preview') : null
 
-  useEffect(() => {
-    const p = searchParams.get('plant') || 'QRcall'
-    const eq = searchParams.get('equip') || ''
-    const lc = searchParams.get('loc') || ''
-    setPlant(p)
-    setEquip(eq)
-    setLoc(lc)
-    loadPlantLogo(p)
-    if (eq) checkExistingCall(eq, p)
-  }, [searchParams])
-
-  async function loadPlantLogo(plantId: string) {
-    const { data } = await supabase
-      .from('plants')
-      .select('logo_url')
-      .eq('id', plantId)
-      .maybeSingle()
-    if (data?.logo_url) setLogoUrl(data.logo_url)
+  if (seenUrl !== urlKey) {
+    setSeenUrl(urlKey)
+    setPlant(urlPlant)
+    setEquip(urlEquip)
+    setLoc(urlLoc)
   }
 
-  async function checkExistingCall(equipmentName: string, plantId: string) {
-    const { data } = await supabase
+  useEffect(() => {
+    let ignore = false
+    supabase
+      .from('plants')
+      .select('logo_url')
+      .eq('id', urlPlant)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!ignore && data?.logo_url) setLogoUrl(data.logo_url)
+      })
+    if (devPreview || !urlEquip) return () => { ignore = true }
+    supabase
       .from('service_calls')
       .select('*')
-      .eq('equipment_name', equipmentName)
-      .eq('plant_id', plantId)
+      .eq('equipment_name', urlEquip)
+      .eq('plant_id', urlPlant)
       .in('status', ['Open', 'Waiting', 'Arrived', 'Needs More Work'])
       .order('submitted_at', { ascending: false })
       .limit(1)
       .maybeSingle()
-    if (data) setExistingCall(data)
-  }
+      .then(({ data }) => {
+        if (!ignore && data) setExistingCall(data)
+      })
+    return () => { ignore = true }
+  }, [urlPlant, urlEquip, devPreview])
 
   function isRateLimited() {
     const key = 'qrcall_last_submit'
@@ -153,55 +161,31 @@ function CallForm() {
     }
   }
 
-  async function updateStatus(newStatus: string) {
-    if (!existingCall) return
+  const previewCall = devPreview === 'open' ? {
+    equipment_name: searchParams.get('equip') || 'Preview machine',
+    location: searchParams.get('loc') || 'Preview location',
+    priority: 'Medium',
+    description: 'Preview only. This call is not saved.',
+    status: 'Waiting',
+    submitter_name: 'Preview operator',
+  } : null
+  const openCall = previewCall || existingCall
 
-    const updates: any = { status: newStatus }
-
-    if (newStatus === 'Arrived') {
-      updates.arrived_at = new Date().toISOString()
-    }
-
-    if (newStatus === 'Needs More Work') {
-      updates.updated_at = new Date().toISOString()
-      if (moreWorkNote.trim()) {
-        updates.description = moreWorkNote.trim()
-      }
-    }
-
-    if (newStatus === 'Completed') {
-      updates.completed_at = new Date().toISOString()
-    }
-
-    const { error } = await supabase
-      .from('service_calls')
-      .update(updates)
-      .eq('id', existingCall.id)
-
-    if (error) {
-      alert('Update failed: ' + error.message)
-      return
-    }
-
-    if (newStatus === 'Completed') {
-      setExistingCall(null)
-    } else {
-      setExistingCall({
-        ...existingCall,
-        ...updates,
-      })
-    }
-    setMoreWorkNote('')
-  }
-
-  if (submitted) {
+  if (submitted || devPreview === 'submitted') {
+    const backPlant = devPreview === 'submitted' ? (searchParams.get('plant') || 'preview') : plant
+    const backEquip = devPreview === 'submitted' ? (searchParams.get('equip') || 'Preview machine') : equip
+    const backLoc = devPreview === 'submitted' ? (searchParams.get('loc') || 'Preview location') : loc
+    const backHref = devPreview === 'submitted'
+      ? `/call?preview=open&plant=${encodeURIComponent(backPlant)}&equip=${encodeURIComponent(backEquip)}&loc=${encodeURIComponent(backLoc)}`
+      : `/call?plant=${backPlant}&equip=${encodeURIComponent(backEquip)}&loc=${encodeURIComponent(backLoc)}`
     return (
       <div className="p-6 text-center">
         <img src={logoUrl || '/logo.png'} alt="logo" className="h-12 mx-auto mb-4" />
         <h1 className="text-2xl font-bold text-green-600">{t.successTitle}</h1>
         <p className="mt-2">{t.successMsg}</p>
+        <p className="mt-4 text-sm text-gray-600">{t.returnHint}</p>
         <div className="mt-6 space-y-3">
-          <a href={`/call?plant=${plant}&equip=${encodeURIComponent(equip)}&loc=${encodeURIComponent(loc)}`} className="block w-full bg-blue-600 text-white py-2 rounded font-medium">
+          <a href={backHref} className="block w-full bg-blue-600 text-white py-2 rounded font-medium">
             Back to this machine
           </a>
           <a href={`/board?plant=${plant}`} className="block w-full bg-gray-600 text-white py-2 rounded font-medium">
@@ -212,7 +196,7 @@ function CallForm() {
     )
   }
 
-  if (existingCall) {
+  if (openCall) {
     return (
       <div className="max-w-md mx-auto p-4">
         <img src={logoUrl || '/logo.png'} alt="logo" className="h-12 mx-auto mb-4" />
@@ -221,62 +205,10 @@ function CallForm() {
             {lang === 'en' ? 'Español' : 'English'}
           </button>
         </div>
-        <h1 className="text-2xl font-bold mb-4">{t.currentCall}</h1>
-        <div className="bg-white border rounded p-4 space-y-2">
-          <div><strong>{existingCall.equipment_name}</strong> — {existingCall.location}</div>
-          <div>{existingCall.priority} • {existingCall.status}</div>
-          <div>{existingCall.description}</div>
-          {existingCall.submitter_name && <div className="text-sm">Submitted by: {existingCall.submitter_name}</div>}
-          {existingCall.photo_url && <img src={existingCall.photo_url} alt="issue" className="mt-2 max-h-40 rounded" />}
-
-          <div className="space-y-3 pt-3">
-            {existingCall.status === 'Waiting' && (
-              <button
-                onClick={() => updateStatus('Arrived')}
-                className="w-full bg-blue-600 text-white py-2 rounded font-medium"
-              >
-                {t.arrived}
-              </button>
-            )}
-
-            {(existingCall.status === 'Arrived' || existingCall.status === 'Needs More Work') && (
-              <>
-                <button
-                  onClick={() => setExistingCall({ ...existingCall, status: 'Needs More Work' })}
-                  className="w-full bg-orange-600 text-white py-2 rounded font-medium"
-                >
-                  {t.needsMore}
-                </button>
-
-                {existingCall.status === 'Needs More Work' && (
-                  <>
-                    <textarea
-                      placeholder={t.moreWorkNote}
-                      value={moreWorkNote}
-                      onChange={(e) => setMoreWorkNote(e.target.value)}
-                      className="w-full border rounded p-2"
-                      rows={3}
-                    />
-                    <button
-                      onClick={() => updateStatus('Needs More Work')}
-                      disabled={!moreWorkNote.trim()}
-                      className="w-full bg-orange-700 text-white py-2 rounded font-medium disabled:opacity-50"
-                    >
-                      {t.saveNote}
-                    </button>
-                  </>
-                )}
-
-                <button
-                  onClick={() => updateStatus('Completed')}
-                  className="w-full bg-green-600 text-white py-2 rounded font-medium"
-                >
-                  {t.completed}
-                </button>
-              </>
-            )}
-          </div>
-        </div>
+        <TechOnCall plantId={plant} call={openCall} lang={lang} />
+        <a href={`/board?plant=${encodeURIComponent(plant)}`} className="block w-full bg-gray-600 text-white py-2 rounded font-medium text-center mt-4">
+          View Status Board
+        </a>
       </div>
     )
   }

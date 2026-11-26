@@ -14,23 +14,26 @@ type Call = {
   arrived_at?: string
   completed_at?: string
   photo_url?: string
+  completed_by_name?: string | null
+  arrived_by_name?: string | null
+  work_notes?: string | null
 }
 
 export default function CompletedPage() {
   const [calls, setCalls] = useState<Call[]>([])
 
   useEffect(() => {
-    fetchCompleted()
-  }, [])
-
-  async function fetchCompleted() {
-    const { data } = await supabase
+    let ignore = false
+    supabase
       .from('service_calls')
       .select('*')
       .eq('status', 'Completed')
       .order('completed_at', { ascending: false })
-    if (data) setCalls(data)
-  }
+      .then(({ data }) => {
+        if (!ignore && data) setCalls(data)
+      })
+    return () => { ignore = true }
+  }, [])
 
   function formatTime(iso?: string) {
     if (!iso) return '—'
@@ -48,9 +51,12 @@ export default function CompletedPage() {
             <div className="mt-1">{call.description}</div>
             <div className="text-xs mt-2 text-gray-700">
               Submitted: {formatTime(call.submitted_at)}<br />
-              Arrived: {formatTime(call.arrived_at)}<br />
-              Completed: {formatTime(call.completed_at)}
+              Arrived: {formatTime(call.arrived_at)}{call.arrived_by_name ? ` · ${call.arrived_by_name}` : ""}<br />
+              Completed: {formatTime(call.completed_at)}{call.completed_by_name ? ` · ${call.completed_by_name}` : ""}
             </div>
+            {call.work_notes && (
+              <div className="text-sm mt-2 whitespace-pre-wrap">{call.work_notes}</div>
+            )}
             {call.photo_url && <img src={call.photo_url} alt="issue" className="mt-2 max-h-40 rounded" />}
           </div>
         ))}
