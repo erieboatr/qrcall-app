@@ -24,6 +24,15 @@ type Call = {
   submitter_name?: string
 }
 
+function technicianName(row: {
+  technicians?: { name?: string | null } | { name?: string | null }[] | null
+}) {
+  const technicians = row.technicians
+  if (!technicians) return undefined
+  if (Array.isArray(technicians)) return technicians[0]?.name ?? undefined
+  return technicians.name ?? undefined
+}
+
 function BoardContent() {
   const searchParams = useSearchParams()
   const plant = searchParams.get("plant") || "QRcall"
@@ -77,7 +86,7 @@ function BoardContent() {
           if (!row.start_time || !row.end_time) {
             offTechIds.add(row.technician_id)
           } else if (row.start_time <= currentTime && row.end_time >= currentTime) {
-            const name = (row as any).technicians?.name
+            const name = technicianName(row)
             if (name) onDutyFromOverride.push(name)
           }
         }
@@ -95,7 +104,7 @@ function BoardContent() {
       if (weeklyData) {
         for (const row of weeklyData) {
           if (!offTechIds.has(row.technician_id)) {
-            const name = (row as any).technicians?.name
+            const name = technicianName(row)
             if (name) weeklyNames.push(name)
           }
         }

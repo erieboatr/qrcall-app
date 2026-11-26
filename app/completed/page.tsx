@@ -20,17 +20,16 @@ export default function CompletedPage() {
   const [calls, setCalls] = useState<Call[]>([])
 
   useEffect(() => {
+    async function fetchCompleted() {
+      const { data } = await supabase
+        .from('service_calls')
+        .select('*')
+        .eq('status', 'Completed')
+        .order('completed_at', { ascending: false })
+      if (data) setCalls(data)
+    }
     fetchCompleted()
   }, [])
-
-  async function fetchCompleted() {
-    const { data } = await supabase
-      .from('service_calls')
-      .select('*')
-      .eq('status', 'Completed')
-      .order('completed_at', { ascending: false })
-    if (data) setCalls(data)
-  }
 
   function formatTime(iso?: string) {
     if (!iso) return '—'
