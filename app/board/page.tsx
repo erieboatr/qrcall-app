@@ -22,6 +22,9 @@ type Call = {
   photo_url?: string
   plant_id?: string
   submitter_name?: string
+  work_notes?: string | null
+  arrived_by_name?: string | null
+  completed_by_name?: string | null
 }
 
 function technicianName(row: {
@@ -179,16 +182,19 @@ function BoardContent() {
                 {call.priority} • {call.status}
               </div>
 
-              {call.description && call.status !== "Needs More Work" && (
+              {call.description && !(call.status === "Needs More Work" && !call.work_notes) && (
                 <div className="mt-2 text-gray-300">{call.description}</div>
               )}
 
-              {call.status === "Needs More Work" && call.description && (
+              {((call.work_notes && call.work_notes.trim()) ||
+                (call.status === "Needs More Work" && call.description && !call.work_notes)) && (
                 <div className="mt-3 p-4 bg-orange-900/60 border-l-4 border-orange-500 rounded-r-lg">
                   <div className="text-sm font-bold text-orange-300 uppercase tracking-wide">
                     Needs Additional Work
                   </div>
-                  <div className="mt-1 text-white text-lg">{call.description}</div>
+                  <div className="mt-1 text-white text-lg whitespace-pre-wrap">
+                    {call.work_notes?.trim() || call.description}
+                  </div>
                   {call.updated_at && (
                     <div className="text-xs text-orange-200 mt-2">
                       Updated: {new Date(call.updated_at).toLocaleString()}
@@ -226,6 +232,7 @@ function BoardContent() {
                 <div className="mt-2">
                   <span className="text-gray-400">Arrived:</span><br />
                   {new Date(call.arrived_at).toLocaleString()}
+                  {call.arrived_by_name ? ` · ${call.arrived_by_name}` : ""}
                 </div>
               )}
               {call.status === "Needs More Work" && call.updated_at && (

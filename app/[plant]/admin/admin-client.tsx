@@ -58,6 +58,10 @@ function PlantAdmin() {
   const [message, setMessage] = useState("")
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [editingDay, setEditingDay] = useState<string | null>(null)
+  const [pinSecret, setPinSecret] = useState("")
+  const [pinDrafts, setPinDrafts] = useState<Record<string, string>>({})
+  const [pinMessage, setPinMessage] = useState("")
+  const [pinSaving, setPinSaving] = useState("")
 
   useEffect(() => {
     if (!plantId) return
@@ -172,6 +176,34 @@ function PlantAdmin() {
   async function toggleTech(id: string, active: boolean) {
     await supabase.from("technicians").update({ active: !active }).eq("id", id)
     load()
+  }
+
+  async function saveTechPin(technicianId: string) {
+    setPinSaving(technicianId)
+    setPinMessage("")
+    try {
+      const response = await fetch("/api/tech/pin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          plantId,
+          technicianId,
+          pin: pinDrafts[technicianId] || "",
+          adminSecret: pinSecret,
+        }),
+      })
+      const body = await response.json()
+      if (!response.ok) {
+        setPinMessage(body.error || "Could not save that PIN.")
+        return
+      }
+      setPinDrafts((prev) => ({ ...prev, [technicianId]: "" }))
+      setPinMessage(body.message || "PIN saved.")
+    } catch {
+      setPinMessage("Could not save that PIN.")
+    } finally {
+      setPinSaving("")
+    }
   }
 
   function getDaysInMonth(date: Date) {
@@ -372,6 +404,43 @@ function PlantAdmin() {
               ))}
             </div>
           )}
+        </div>
+
+        <div className="mb-8 border rounded-lg p-4 space-y-3">
+          <h2 className="font-semibold">Technician PINs</h2>
+          <p className="text-sm text-gray-600">
+            Give each technician a PIN and tell them in person. On the machine QR page they enter the mobile number they signed up with and this PIN. That phone remembers them.
+          </p>
+          <input
+            type="password"
+            value={pinSecret}
+            onChange={(e) => setPinSecret(e.target.value)}
+            placeholder="TECH_SESSION_SECRET"
+            className="w-full border rounded p-2"
+            autoComplete="off"
+          />
+          {techs.filter((t) => t.active).map((tech) => (
+            <div key={tech.id} className="flex items-center gap-2">
+              <span className="text-sm w-32">{tech.name}</span>
+              <input
+                inputMode="numeric"
+                autoComplete="off"
+                placeholder="4–6 digit PIN"
+                value={pinDrafts[tech.id] || ""}
+                onChange={(e) => setPinDrafts((prev) => ({ ...prev, [tech.id]: e.target.value }))}
+                className="border rounded p-2 text-sm flex-1"
+              />
+              <button
+                type="button"
+                disabled={pinSaving === tech.id || !pinSecret}
+                onClick={() => saveTechPin(tech.id)}
+                className="bg-gray-800 text-white px-3 py-2 rounded text-sm disabled:opacity-50"
+              >
+                {pinSaving === tech.id ? "Saving…" : "Save PIN"}
+              </button>
+            </div>
+          ))}
+          {pinMessage && <p className="text-sm text-gray-700">{pinMessage}</p>}
         </div>
 
         <div className="border rounded-lg p-4 mb-6">
