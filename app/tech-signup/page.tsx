@@ -1,18 +1,13 @@
-'use client'
+import { redirect } from 'next/navigation'
+import { pageMetadata } from '@/lib/site'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+export const metadata = pageMetadata({
+  title: 'Tech Signup',
+  description:
+    'Technicians opt in to on-duty SMS service-call alerts from QRcall. English and Spanish.',
+  path: '/tech-signup',
+})
 
-export default function TechSignupRedirect() {
-  const router = useRouter()
-
-  useEffect(() => {
-    router.replace('/tech-signup/sms')
-  }, [router])
-
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <p className="text-gray-600">Loading opt-in form…</p>
-    </div>
-  )
+export default function TechSignupPage() {
+  redirect('/tech-signup/sms')
 }

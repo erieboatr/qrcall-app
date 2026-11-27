@@ -1,70 +1,63 @@
-"use client"
+import type { Metadata } from 'next'
+import { notFound, redirect } from 'next/navigation'
+import { getPlant } from '@/lib/plants'
+import { pageMetadata } from '@/lib/site'
 
-import { Suspense, useEffect, useState } from "react"
-import { useParams } from "next/navigation"
-import { createClient } from "@supabase/supabase-js"
+export const instant = false
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+type PlantRouteProps = {
+  params: Promise<{ plant: string }>
+}
 
-function PlantPageContent() {
-  const params = useParams()
-  const plantId = params.plant as string
+export async function generateMetadata({ params }: PlantRouteProps): Promise<Metadata> {
+  const { plant } = await params
+  const record = await getPlant(plant)
+  if (!record) {
+    return { title: 'Plant not found' }
+  }
+  return pageMetadata({
+    title: record.name,
+    description: `QRcall service alerts for ${record.name}. Open the live status board or sign technicians up for on-duty SMS alerts.`,
+    path: `/${record.id}`,
+  })
+}
 
-  const [plantName, setPlantName] = useState("")
-  const [logoUrl, setLogoUrl] = useState("/logo.png")
+export default async function PlantPage({ params }: PlantRouteProps) {
+  const { plant } = await params
+  const record = await getPlant(plant)
+  if (!record) notFound()
+  if (record.id !== plant) redirect(`/${record.id}`)
 
-  useEffect(() => {
-    if (!plantId) return
-    supabase
-      .from("plants")
-      .select("name, logo_url")
-      .eq("id", plantId)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data?.name) setPlantName(data.name)
-        if (data?.logo_url) setLogoUrl(data.logo_url)
-      })
-  }, [plantId])
+  const logo = record.logo_url || '/logo.png'
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
-        <img src={logoUrl} alt="logo" className="h-20 mx-auto mb-6" />
-        <h1 className="text-3xl font-bold mb-2">{plantName || plantId}</h1>
-        <p className="text-gray-600 mb-8">QRcall Service Alerts</p>
+    <main className="flex min-h-screen items-center justify-center bg-gray-50 p-6">
+      <div className="w-full max-w-md rounded-xl bg-white p-8 text-center shadow-lg">
+        <img src={logo} alt={`${record.name} logo`} className="mx-auto mb-6 h-20 w-auto" />
+        <h1 className="mb-2 text-3xl font-bold">{record.name}</h1>
+        <p className="mb-8 text-gray-600">QRcall Service Alerts</p>
 
         <div className="space-y-3">
           <a
-            href={`/board?plant=${plantId}`}
-            className="block w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700"
+            href={`/board?plant=${encodeURIComponent(record.id)}`}
+            className="block w-full rounded-lg bg-blue-600 py-3 font-semibold text-white hover:bg-blue-700"
           >
             Live Status Board
           </a>
           <a
-            href={`/tech-signup/sms?plant=${plantId}`}
-            className="block w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700"
+            href={`/tech-signup/sms?plant=${encodeURIComponent(record.id)}`}
+            className="block w-full rounded-lg bg-green-600 py-3 font-semibold text-white hover:bg-green-700"
           >
             Tech Signup
           </a>
           <a
-            href={`/${plantId}/admin`}
-            className="block w-full bg-gray-800 text-white py-3 rounded-lg font-semibold hover:bg-gray-900"
+            href={`/${record.id}/admin`}
+            className="block w-full rounded-lg bg-gray-800 py-3 font-semibold text-white hover:bg-gray-900"
           >
             Admin
           </a>
         </div>
       </div>
-    </div>
-  )
-}
-
-export default function PlantPage() {
-  return (
-    <Suspense fallback={<div className="p-6 text-center">Loading…</div>}>
-      <PlantPageContent />
-    </Suspense>
+    </main>
   )
 }

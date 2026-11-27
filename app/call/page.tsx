@@ -52,13 +52,24 @@ const translations = {
   },
 }
 
+type ExistingCall = {
+  id: string
+  equipment_name: string
+  location: string
+  priority: string
+  status: string
+  description: string | null
+  submitter_name?: string | null
+  photo_url?: string | null
+}
+
 function CallForm() {
   const searchParams = useSearchParams()
   const [lang, setLang] = useState<'en' | 'es'>('en')
-  const [plant, setPlant] = useState('QRcall')
+  const [plant, setPlant] = useState(searchParams.get('plant') || 'QRcall')
   const [logoUrl, setLogoUrl] = useState<string | null>(null)
-  const [equip, setEquip] = useState('')
-  const [loc, setLoc] = useState('')
+  const [equip, setEquip] = useState(searchParams.get('equip') || '')
+  const [loc, setLoc] = useState(searchParams.get('loc') || '')
   const [priority, setPriority] = useState('Medium')
   const [description, setDescription] = useState('')
   const [submitter, setSubmitter] = useState('')
@@ -66,42 +77,53 @@ function CallForm() {
   const [honeypot, setHoneypot] = useState('')
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
-  const [existingCall, setExistingCall] = useState<any>(null)
+  const [existingCall, setExistingCall] = useState<ExistingCall | null>(null)
   const [moreWorkNote, setMoreWorkNote] = useState('')
   const t = translations[lang]
+  const plantFromUrl = searchParams.get('plant') || 'QRcall'
+  const equipFromUrl = searchParams.get('equip') || ''
+  const locFromUrl = searchParams.get('loc') || ''
+  const urlKey = `${plantFromUrl}\n${equipFromUrl}\n${locFromUrl}`
+  const [appliedUrlKey, setAppliedUrlKey] = useState(urlKey)
+
+  if (appliedUrlKey !== urlKey) {
+    setAppliedUrlKey(urlKey)
+    setPlant(plantFromUrl)
+    setEquip(equipFromUrl)
+    setLoc(locFromUrl)
+  }
 
   useEffect(() => {
-    const p = searchParams.get('plant') || 'QRcall'
-    const eq = searchParams.get('equip') || ''
-    const lc = searchParams.get('loc') || ''
-    setPlant(p)
-    setEquip(eq)
-    setLoc(lc)
-    loadPlantLogo(p)
-    if (eq) checkExistingCall(eq, p)
-  }, [searchParams])
+    let cancelled = false
 
-  async function loadPlantLogo(plantId: string) {
+    async function loadPlantLogo(plantId: string) {
     const { data } = await supabase
       .from('plants')
       .select('logo_url')
       .eq('id', plantId)
       .maybeSingle()
-    if (data?.logo_url) setLogoUrl(data.logo_url)
+    if (!cancelled && data?.logo_url) setLogoUrl(data.logo_url)
   }
 
-  async function checkExistingCall(equipmentName: string, plantId: string) {
-    const { data } = await supabase
-      .from('service_calls')
-      .select('*')
-      .eq('equipment_name', equipmentName)
-      .eq('plant_id', plantId)
-      .in('status', ['Open', 'Waiting', 'Arrived', 'Needs More Work'])
-      .order('submitted_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    if (data) setExistingCall(data)
-  }
+    async function checkExistingCall(equipmentName: string, plantId: string) {
+      const { data } = await supabase
+        .from('service_calls')
+        .select('id, equipment_name, location, priority, status, description, submitter_name, photo_url')
+        .eq('equipment_name', equipmentName)
+        .eq('plant_id', plantId)
+        .in('status', ['Open', 'Waiting', 'Arrived', 'Needs More Work'])
+        .order('submitted_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (!cancelled && data) setExistingCall(data)
+    }
+
+    loadPlantLogo(plantFromUrl)
+    if (equipFromUrl) checkExistingCall(equipFromUrl, plantFromUrl)
+    return () => {
+      cancelled = true
+    }
+  }, [plantFromUrl, equipFromUrl])
 
   function isRateLimited() {
     const key = 'qrcall_last_submit'
@@ -156,7 +178,13 @@ function CallForm() {
   async function updateStatus(newStatus: string) {
     if (!existingCall) return
 
-    const updates: any = { status: newStatus }
+    const updates: {
+      status: string
+      arrived_at?: string
+      updated_at?: string
+      description?: string
+      completed_at?: string
+    } = { status: newStatus }
 
     if (newStatus === 'Arrived') {
       updates.arrived_at = new Date().toISOString()
