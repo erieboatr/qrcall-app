@@ -17,6 +17,22 @@ const PLANT_PASSWORDS: Record<string, string> = {
   QRcall: "qrcall2026",
 }
 
+type AdminTech = {
+  id: string
+  name: string
+  phone: string
+  language: string
+  active: boolean
+}
+
+type AdminSchedule = {
+  day_of_week: number
+  technician_id: string
+  start_time: string
+  end_time: string
+  plant_id: string
+}
+
 function PlantAdmin() {
   const searchParams = useSearchParams()
   const plantId = searchParams.get("plant") || "ppi"
@@ -25,8 +41,8 @@ function PlantAdmin() {
   const [password, setPassword] = useState("")
   const [plantName, setPlantName] = useState("")
   const [logoUrl, setLogoUrl] = useState("/logo.png")
-  const [techs, setTechs] = useState<any[]>([])
-  const [schedule, setSchedule] = useState<any[]>([])
+  const [techs, setTechs] = useState<AdminTech[]>([])
+  const [schedule, setSchedule] = useState<AdminSchedule[]>([])
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState("")
   const [selectedTechId, setSelectedTechId] = useState("")
@@ -59,13 +75,13 @@ function PlantAdmin() {
       .select("id, name, phone, language, active")
       .eq("plant_id", plantId)
       .order("name")
-    setTechs(techData || [])
+    setTechs((techData || []) as AdminTech[])
 
     const { data: schedData } = await supabase
       .from("schedules")
       .select("*")
       .eq("plant_id", plantId)
-    setSchedule(schedData || [])
+    setSchedule((schedData || []) as AdminSchedule[])
   }
 
   function tryUnlock(e: React.FormEvent) {
@@ -85,7 +101,11 @@ function PlantAdmin() {
     }
   }
 
-  function updateShift(day: number, field: string, value: string) {
+  function updateShift(
+    day: number,
+    field: 'technician_id' | 'start_time' | 'end_time',
+    value: string,
+  ) {
     setSchedule(prev => {
       const existing = prev.find(s => s.day_of_week === day)
       if (existing) {

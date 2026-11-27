@@ -98,7 +98,7 @@ function CallForm() {
     if (devPreview || !urlEquip) return () => { ignore = true }
     supabase
       .from('service_calls')
-      .select('*')
+      .select('id, equipment_name, location, priority, status, description, work_notes, submitter_name, photo_url')
       .eq('equipment_name', urlEquip)
       .eq('plant_id', urlPlant)
       .in('status', ['Open', 'Waiting', 'Arrived', 'Needs More Work'])

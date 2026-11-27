@@ -9,14 +9,6 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-type TechName = { name?: string | null }
-
-function technicianName(value: TechName | TechName[] | null | undefined): string | undefined {
-  if (!value) return undefined
-  const record = Array.isArray(value) ? value[0] : value
-  return record?.name || undefined
-}
-
 type Call = {
   id: string
   equipment_name: string
@@ -33,6 +25,15 @@ type Call = {
   work_notes?: string | null
   arrived_by_name?: string | null
   completed_by_name?: string | null
+}
+
+function technicianName(row: {
+  technicians?: { name?: string | null } | { name?: string | null }[] | null
+}) {
+  const technicians = row.technicians
+  if (!technicians) return undefined
+  if (Array.isArray(technicians)) return technicians[0]?.name ?? undefined
+  return technicians.name ?? undefined
 }
 
 function BoardContent() {
@@ -88,7 +89,7 @@ function BoardContent() {
           if (!row.start_time || !row.end_time) {
             offTechIds.add(row.technician_id)
           } else if (row.start_time <= currentTime && row.end_time >= currentTime) {
-            const name = technicianName(row.technicians)
+            const name = technicianName(row)
             if (name) onDutyFromOverride.push(name)
           }
         }
@@ -106,7 +107,7 @@ function BoardContent() {
       if (weeklyData) {
         for (const row of weeklyData) {
           if (!offTechIds.has(row.technician_id)) {
-            const name = technicianName(row.technicians)
+            const name = technicianName(row)
             if (name) weeklyNames.push(name)
           }
         }
